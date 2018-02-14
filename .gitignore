@@ -1,0 +1,17 @@
+# go/dep files
+vendor
+Gopkg.lock
+
+# Mac files
+.DS_STORE
+
+# Vim
+*.swp
+
+# Certificate files
+*.key
+*.crt
+*.csr
+
+# go-service files
+.go.service.rename
