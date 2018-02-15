@@ -5,8 +5,18 @@ PostgreSQL:
     - "5432:5432"
   environment:
     - DEBUG=false
-    - DB_USER=kbase
+
+    - DB_USER=user
     - DB_PASS=password
     - DB_NAME=kbase
+    - DB_TEMPLATE=
+
+    - DB_EXTENSION=
+
+    - REPLICATION_MODE=
+    - REPLICATION_USER=
+    - REPLICATION_PASS=
+    - REPLICATION_SSLMODE=
   volumes:
-    - /Volumes/docker/postgresql:/var/lib/postgresql
+    - /user/local/postgresql:/var/lib/postgresql
+    - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql

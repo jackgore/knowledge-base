@@ -1,4 +1,4 @@
-CREATE TABLE question (
+CREATE TABLE IF NOT EXISTS question (
 	id INT NOT NULL,
 	submitted_on DATE,
 	authored_by INT NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE question (
 	PRIMARY KEY (id)
 );
 
-CREATE TABLE author (
+CREATE TABLE IF NOT EXISTS author (
 	id INT NOT NULL,
 	first_name VARCHAR(64),
 	last_name VARCHAR(64),
