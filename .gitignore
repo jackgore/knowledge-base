@@ -15,3 +15,6 @@ Gopkg.lock
 
 # go-service files
 .go.service.rename
+
+# Database files
+*.db

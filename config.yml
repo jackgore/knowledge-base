@@ -4,3 +4,7 @@ server:
 ssl:
     certificate: 'server.crt'
     key: 'server.key'
+database:
+    name: 'kbase'
+    user: 'kbase'
+    password: 'password'

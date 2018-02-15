@@ -11,6 +11,8 @@ import (
 	"github.com/JonathonGore/knowledge-base/config"
 	"github.com/JonathonGore/knowledge-base/handlers"
 	"github.com/JonathonGore/knowledge-base/server"
+	"github.com/JonathonGore/knowledge-base/storage"
+	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
 
 func sslExists(certPath, keyPath string) bool {
@@ -29,14 +31,30 @@ func sslExists(certPath, keyPath string) bool {
 	return true
 }
 
+func getSQLConfig(conf config.Config) sql.Config {
+	return (sql.Config{
+		DatabaseName: conf.GetString("database.name"),
+		Username:     conf.GetString("database.user"),
+		Password:     conf.GetString("database.password"),
+		Host:         "localhost",
+	})
+}
+
 func main() {
 	var api handlers.API
 	var conf config.Config
+	var d storage.Driver
 
 	conf, err := yaml.New("config.yml")
 	if err != nil {
 		log.Fatalf("unable to parse configuration file", err)
 	}
+
+	d, err = sql.New(getSQLConfig(conf))
+	if err != nil {
+		log.Fatalf("unable to create sql driver")
+	}
+	fmt.Printf("Driver: %v", d)
 
 	api, err = handlers.New()
 	if err != nil {
