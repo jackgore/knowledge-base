@@ -6,5 +6,5 @@ ssl:
     key: 'server.key'
 database:
     name: 'kbase'
-    user: 'kbase'
+    user: 'user'
     password: 'password'

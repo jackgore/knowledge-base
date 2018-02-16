@@ -5,5 +5,6 @@ import (
 )
 
 type Driver interface {
-	InsertQuestion(author models.User, question models.Question) error
+	InsertQuestion(question models.Question) error
+	InsertUser(user models.User) error
 }

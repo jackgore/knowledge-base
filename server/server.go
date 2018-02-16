@@ -14,7 +14,8 @@ type Server struct {
 func New(api handlers.API) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
-	s.Router.HandleFunc("/v1/{name}", api.HelloWorld).Methods(http.MethodGet)
+	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 
 	return s, nil
 }

@@ -5,5 +5,6 @@ import (
 )
 
 type API interface {
-	HelloWorld(w http.ResponseWriter, r *http.Request)
+	SubmitQuestion(w http.ResponseWriter, r *http.Request)
+	Signup(w http.ResponseWriter, r *http.Request)
 }

@@ -36,7 +36,7 @@ func getSQLConfig(conf config.Config) sql.Config {
 		DatabaseName: conf.GetString("database.name"),
 		Username:     conf.GetString("database.user"),
 		Password:     conf.GetString("database.password"),
-		Host:         "localhost",
+		Host:         "0.0.0.0",
 	})
 }
 
@@ -54,9 +54,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to create sql driver")
 	}
-	fmt.Printf("Driver: %v", d)
 
-	api, err = handlers.New()
+	api, err = handlers.New(d)
 	if err != nil {
 		log.Fatalf("unable to create handler: %v", err)
 	}
