@@ -2,6 +2,7 @@ package handlers
 
 import (
 	//	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -76,5 +77,21 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
  * TODO: accept query params
  */
 func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
+	questions, err := h.db.GetQuestions()
+	if err != nil {
+		log.Printf("Unable to get questions from database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		//w.Write([]{"some json error"})
+		return
+	}
 
+	contents, err := json.Marshal(questions)
+	if err != nil {
+		log.Printf("Unable to convert questions to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		//w.Write([]{"some json error"})
+		return
+	}
+
+	w.Write(contents)
 }

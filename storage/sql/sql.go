@@ -28,7 +28,7 @@ func (d *driver) InsertUser(user models.User) error {
 
 /* Gets a page of questions from the database
  */
-func (d *driver) GetQuestions(question models.Question) ([]models.Question, error) {
+func (d *driver) GetQuestions() ([]models.Question, error) {
 	rows, err := d.db.Query(
 		" SELECT post.id as id, submitted_on, title, content, author" +
 			" FROM post NATURAL JOIN question" +
