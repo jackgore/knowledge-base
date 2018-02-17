@@ -69,3 +69,12 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+/* GET /questions
+ *
+ * Receives a page of questions
+ * TODO: accept query params
+ */
+func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
+
+}

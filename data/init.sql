@@ -1,16 +1,16 @@
 CREATE TABLE IF NOT EXISTS author (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64),
-	last_name VARCHAR(64),
-	joined_on DATE,
+	last_name VARCHAR(64) NOT NULL,
+	joined_on DATE NOT NULL,
 	PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS post (
 	id SERIAL NOT NULL,
-	submitted_on DATE,
-	title VARCHAR(256),
-	content TEXT,
+	submitted_on DATE NOT NULL,
+	title VARCHAR(256) NOT NULL,
+	content TEXT NOT NULL,
 	author INT NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (author) REFERENCES author (id)
@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS question (
 
 CREATE TABLE IF NOT EXISTS followup (
 	id SERIAL NOT NULL,
-	content TEXT,
-	submitted_on DATE,
+	content TEXT NOT NULL,
+	submitted_on DATE NOT NULL,
 	author INT NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (author) REFERENCES author (id)
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS followup (
 CREATE TABLE IF NOT EXISTS answer (
 	id INT NOT NULL,
 	question INT NOT NULL,
-	accepted BOOL DEFAULT false,
+	accepted BOOL NOT NULL DEFAULT false,
 	PRIMARY KEY (id),
 	FOREIGN KEY (id) REFERENCES followup (id),
 	FOREIGN KEY (question) REFERENCES question (id)

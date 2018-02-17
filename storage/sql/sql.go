@@ -26,13 +26,39 @@ func (d *driver) InsertUser(user models.User) error {
 	return nil
 }
 
+/* Gets a page of questions from the database
+ */
+func (d *driver) GetQuestions(question models.Question) ([]models.Question, error) {
+	rows, err := d.db.Query(
+		" SELECT post.id as id, submitted_on, title, content, author" +
+			" FROM post NATURAL JOIN question" +
+			" order by submitted_on")
+	if err != nil {
+		log.Printf("Unable to receive questions from the db: %v", err)
+		return nil, err
+	}
+
+	questions := make([]models.Question, 10)
+	for rows.Next() {
+		question := models.Question{}
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.AuthoredBy)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		questions = append(questions, question)
+	}
+
+	return questions, err
+}
+
 /* Inserts the given question into the database.
  * This is an all or nothing insertion.
  */
 func (d *driver) InsertQuestion(question models.Question) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		log.Printf("Unbale to begin transaction: %", err)
+		log.Printf("Unable to begin transaction: %v", err)
 		return err
 	}
 
