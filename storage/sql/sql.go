@@ -17,7 +17,7 @@ type driver struct {
  * This is an all or nothing insertion.
  */
 func (d *driver) InsertUser(user models.User) error {
-	_, err := d.db.Exec("INSERT INTO author(first_name, last_name, joined_on) VALUES($1)", user.FirstName, user.LastName, user.JoinedOn)
+	_, err := d.db.Exec("INSERT INTO author(first_name, last_name, joined_on) VALUES($1, $2, $3)", user.FirstName, user.LastName, user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to insert user: %v", err)
 		return err
@@ -47,6 +47,34 @@ func (d *driver) InsertQuestion(question models.Question) error {
 	_, err = tx.Exec("INSERT INTO question(id) VALUES($1)", postID)
 	if err != nil {
 		log.Printf("Unable to insert post: %v", err)
+		return tx.Rollback() // Not sure if we want to return this error
+	}
+
+	return tx.Commit()
+}
+
+/* Inserts the given answer into the database.
+ * This is an all or nothing insertion.
+ */
+func (d *driver) InsertAnswer(answer models.Answer) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		log.Printf("Unbale to begin transaction: %", err)
+		return err
+	}
+
+	var followID int
+	err = tx.QueryRow("INSERT INTO followup(submitted_on, content, author) VALUES($1,$2,$3,$4) returning id;",
+		answer.SubmittedOn, answer.Content, answer.AuthoredBy).Scan(&followID)
+	if err != nil {
+		log.Printf("Unable to insert answer: %v", err)
+		return tx.Rollback() // Not sure if we want to return this error
+	}
+
+	_, err = tx.Exec("INSERT INTO answer(id, question, accepted) VALUES($1,$2,$3)",
+		followID, answer.Question, answer.Accepted)
+	if err != nil {
+		log.Printf("Unable to insert answer: %v", err)
 		return tx.Rollback() // Not sure if we want to return this error
 	}
 

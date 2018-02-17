@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS post (
 );
 
 CREATE TABLE IF NOT EXISTS question (
-	id SERIAL NOT NULL,
+	id INT NOT NULL,
 	PRIMARY KEY (id),
 	FOREIGN KEY (id) REFERENCES post (id)
 );
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS followup (
 );
 
 CREATE TABLE IF NOT EXISTS answer (
-	id SERIAL NOT NULL,
+	id INT NOT NULL,
 	question INT NOT NULL,
 	accepted BOOL DEFAULT false,
 	PRIMARY KEY (id),
