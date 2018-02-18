@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/JonathonGore/knowledge-base/models"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/utils"
-	//"github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -42,6 +43,40 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+/* GET /users/{user-id}
+ *
+ * Signs up the given user by inserting them into the database.
+ */
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+	userID := mux.Vars(r)["user-id"]
+
+	id, err := strconv.Atoi(userID)
+	if err != nil {
+		log.Printf("Received bad user id in request paramater: %v", userID)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.db.GetUser(id)
+	if err != nil {
+		log.Printf("Unable to get user from database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		//w.Write([]{"some json error"})
+		return
+	}
+
+	contents, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("Unable to convert user to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		//w.Write([]{"some json error"})
+		return
+	}
+
+	w.Write(contents)
+	return
 }
 
 /* POST /questions
@@ -94,4 +129,5 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(contents)
+	return
 }
