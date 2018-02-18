@@ -10,6 +10,7 @@ import (
 	"github.com/JonathonGore/dots/yaml"
 	"github.com/JonathonGore/knowledge-base/config"
 	"github.com/JonathonGore/knowledge-base/handlers"
+	_ "github.com/JonathonGore/knowledge-base/logging"
 	"github.com/JonathonGore/knowledge-base/server"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/storage/sql"

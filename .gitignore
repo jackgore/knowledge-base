@@ -18,3 +18,5 @@ Gopkg.lock
 
 # Database files
 *.db
+
+test_logs.txt
