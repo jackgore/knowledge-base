@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS user (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64) NOT NULL,
 	last_name VARCHAR(64) NOT NULL,
+	username varchar(32) NOT NULL,
+	password varchar(64) NOT NULL,
 	joined_on DATE NOT NULL,
 	PRIMARY KEY (id)
 );
