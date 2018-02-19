@@ -13,6 +13,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	JSONParseError        = "Unable to parse request body as JSON"
+	JSONError             = "Unable to convert into JSON"
+	DBInsertError         = "Unable to insert into databse"
+	DBGetError            = "Unable to retrieve from databse"
+	InvalidPathParamError = "Received bad bath paramater"
+)
+
 type Handler struct {
 	db storage.Driver
 }
@@ -29,8 +37,9 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user := models.User{}
 	err := utils.UnmarshalRequestBody(r, &user)
 	if err != nil {
+		log.Printf("Unable to parse body as JSON: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"}) TODO
+		w.Write((&ErrorResponse{JSONParseError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -38,7 +47,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to insert user into database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{DBInsertError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -56,6 +65,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Received bad user id in request paramater: %v", userID)
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{InvalidPathParamError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -63,7 +73,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to get user from database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{DBGetError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -71,7 +81,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to convert user to byte array")
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{JSONError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -89,7 +99,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	err := utils.UnmarshalRequestBody(r, &question)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"}) TODO
+		w.Write((&ErrorResponse{JSONParseError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -99,7 +109,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to insert question into database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{DBInsertError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -116,7 +126,7 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to get questions from database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{DBGetError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
@@ -124,7 +134,7 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Unable to convert questions to byte array")
 		w.WriteHeader(http.StatusInternalServerError)
-		//w.Write([]{"some json error"})
+		w.Write((&ErrorResponse{JSONError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
