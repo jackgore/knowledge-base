@@ -30,9 +30,8 @@ func (d *driver) InsertUser(user models.User) error {
  */
 func (d *driver) GetUser(userID int) (models.User, error) {
 	user := models.User{}
-
-	err := d.db.QueryRow("SELECT first_name, last_name, joined_on"+
-		" FROM user WHERE id=$1", userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
+	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM user WHERE id=$1",
+		userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to retrieve user with id %v: %v", userID, err)
 		return user, err

@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	//	"fmt"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/models"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/utils"
@@ -40,6 +41,32 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Unable to parse body as JSON: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write((&ErrorResponse{JSONParseError, http.StatusInternalServerError}).toJSON())
+		return
+	}
+
+	// verify username and password meet out criteria of valid
+	if err = creds.ValidateSignupCredentials(user.Username, user.Password); err != nil {
+		log.Printf("Attempted to sign up user %v with invalid credentials - %v", user.Username, err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{JSONParseError, http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	_, err = h.db.GetUser(user.ID)
+	if err == nil {
+		log.Printf("Attempted to sign up user %v but username already exists", user.Username)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{fmt.Sprintf("Attempted to sign up with username: %v - but username already exists", user.Username),
+			http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	// Hash our password to avoid storing plaintext in database
+	user.Password, err = creds.HashPassword(user.Password)
+	if err != nil {
+		log.Printf("Error hashing user password: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write((&ErrorResponse{"Internal server error", http.StatusBadRequest}).toJSON())
 		return
 	}
 
