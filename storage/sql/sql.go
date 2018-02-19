@@ -17,7 +17,7 @@ type driver struct {
  * This is an all or nothing insertion.
  */
 func (d *driver) InsertUser(user models.User) error {
-	_, err := d.db.Exec("INSERT INTO author(first_name, last_name, joined_on) VALUES($1, $2, $3)", user.FirstName, user.LastName, user.JoinedOn)
+	_, err := d.db.Exec("INSERT INTO user(first_name, last_name, joined_on) VALUES($1, $2, $3)", user.FirstName, user.LastName, user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to insert user: %v", err)
 		return err
@@ -32,7 +32,7 @@ func (d *driver) GetUser(userID int) (models.User, error) {
 	user := models.User{}
 
 	err := d.db.QueryRow("SELECT first_name, last_name, joined_on"+
-		" FROM author WHERE id=$1", userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
+		" FROM user WHERE id=$1", userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to retrieve user with id %v: %v", userID, err)
 		return user, err
