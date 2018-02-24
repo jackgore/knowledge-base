@@ -10,4 +10,4 @@ Scenario Outline: The application has a signup endpoint
 
   Examples:
     | code |
-	|  200 |
+    |  200 |
