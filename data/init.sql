@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS user (
+CREATE TABLE IF NOT EXISTS users (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64) NOT NULL,
 	last_name VARCHAR(64) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS post (
 	content TEXT NOT NULL,
 	author INT NOT NULL,
 	PRIMARY KEY (id),
-	FOREIGN KEY (author) REFERENCES user (id)
+	FOREIGN KEY (author) REFERENCES users (id)
 );
 
 CREATE TABLE IF NOT EXISTS question (
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS followup (
 	submitted_on DATE NOT NULL,
 	author INT NOT NULL,
 	PRIMARY KEY (id),
-	FOREIGN KEY (author) REFERENCES user (id)
+	FOREIGN KEY (author) REFERENCES users (id)
 );
 
 CREATE TABLE IF NOT EXISTS answer (
