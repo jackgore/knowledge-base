@@ -1,13 +1,14 @@
 package storage
 
 import (
-	"github.com/JonathonGore/knowledge-base/models"
+	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/user"
 )
 
 type Driver interface {
-	InsertQuestion(question models.Question) error
-	GetQuestions() ([]models.Question, error)
+	InsertQuestion(question question.Question) error
+	GetQuestions() ([]question.Question, error)
 
-	InsertUser(user models.User) error
-	GetUser(userID int) (models.User, error)
+	InsertUser(user user.User) error
+	GetUser(userID int) (user.User, error)
 }

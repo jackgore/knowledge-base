@@ -1,4 +1,4 @@
-package models
+package question
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ type Question struct {
 /* Validates the given question to make sure all fields all
  * meet the required specifications.
  */
-func ValidateQuestion(question Question) error {
+func Validate(question Question) error {
 	err := validateID(question.ID)
 	if err != nil {
 		return err

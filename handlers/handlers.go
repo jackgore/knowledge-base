@@ -8,7 +8,8 @@ import (
 	"strconv"
 
 	"github.com/JonathonGore/knowledge-base/creds"
-	"github.com/JonathonGore/knowledge-base/models"
+	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/utils"
 	"github.com/gorilla/mux"
@@ -35,7 +36,7 @@ func New(d storage.Driver) (*Handler, error) {
  * Signs up the given user by inserting them into the database.
  */
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
-	user := models.User{}
+	user := user.User{}
 	err := utils.UnmarshalRequestBody(r, &user)
 	if err != nil {
 		log.Printf("Unable to parse body as JSON: %v", err)
@@ -122,15 +123,15 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
  * database
  */
 func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
-	question := models.Question{}
-	err := utils.UnmarshalRequestBody(r, &question)
+	q := question.Question{}
+	err := utils.UnmarshalRequestBody(r, &q)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write((&ErrorResponse{JSONParseError, http.StatusInternalServerError}).toJSON())
 		return
 	}
 
-	err = models.ValidateQuestion(question)
+	err = question.Validate(q)
 	if err != nil {
 		log.Printf("Received invalid question: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -140,7 +141,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Make sure the question is authored by a valid user
 
-	err = h.db.InsertQuestion(question)
+	err = h.db.InsertQuestion(q)
 	if err != nil {
 		log.Printf("Unable to insert question into database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/JonathonGore/knowledge-base/models"
+	"github.com/JonathonGore/knowledge-base/models/answer"
+	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/user"
 	_ "github.com/lib/pq"
 )
 
@@ -16,7 +18,7 @@ type driver struct {
 /* Inserts the given user into the database.
  * This is an all or nothing insertion.
  */
-func (d *driver) InsertUser(user models.User) error {
+func (d *driver) InsertUser(user user.User) error {
 	_, err := d.db.Exec("INSERT INTO user(first_name, last_name, joined_on) VALUES($1, $2, $3)", user.FirstName, user.LastName, user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to insert user: %v", err)
@@ -28,8 +30,8 @@ func (d *driver) InsertUser(user models.User) error {
 
 /* Gets the user with the given userID from the database.
  */
-func (d *driver) GetUser(userID int) (models.User, error) {
-	user := models.User{}
+func (d *driver) GetUser(userID int) (user.User, error) {
+	user := user.User{}
 	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM user WHERE id=$1",
 		userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
@@ -42,7 +44,7 @@ func (d *driver) GetUser(userID int) (models.User, error) {
 
 /* Gets a page of questions from the database
  */
-func (d *driver) GetQuestions() ([]models.Question, error) {
+func (d *driver) GetQuestions() ([]question.Question, error) {
 	rows, err := d.db.Query(
 		" SELECT post.id as id, submitted_on, title, content, author" +
 			" FROM post NATURAL JOIN question" +
@@ -52,9 +54,9 @@ func (d *driver) GetQuestions() ([]models.Question, error) {
 		return nil, err
 	}
 
-	questions := make([]models.Question, 10)
+	questions := make([]question.Question, 10)
 	for rows.Next() {
-		question := models.Question{}
+		question := question.Question{}
 		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.AuthoredBy)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
@@ -69,7 +71,7 @@ func (d *driver) GetQuestions() ([]models.Question, error) {
 /* Inserts the given question into the database.
  * This is an all or nothing insertion.
  */
-func (d *driver) InsertQuestion(question models.Question) error {
+func (d *driver) InsertQuestion(question question.Question) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		log.Printf("Unable to begin transaction: %v", err)
@@ -96,7 +98,7 @@ func (d *driver) InsertQuestion(question models.Question) error {
 /* Inserts the given answer into the database.
  * This is an all or nothing insertion.
  */
-func (d *driver) InsertAnswer(answer models.Answer) error {
+func (d *driver) InsertAnswer(answer answer.Answer) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		log.Printf("Unbale to begin transaction: %", err)
