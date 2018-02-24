@@ -130,7 +130,15 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Validate we have the needed fields in our question object
+	err = models.ValidateQuestion(question)
+	if err != nil {
+		log.Printf("Received invalid question: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{err.Error(), http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	// TODO: Make sure the question is authored by a valid user
 
 	err = h.db.InsertQuestion(question)
 	if err != nil {
