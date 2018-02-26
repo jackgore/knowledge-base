@@ -17,9 +17,14 @@ type driver struct {
 
 /* Inserts the given user into the database.
  * This is an all or nothing insertion.
+ *
+ * Note: Assumes the password in the user object has already been hashed
+ *
+ * TODO: This function should return the id of the inserted user
  */
 func (d *driver) InsertUser(user user.User) error {
-	_, err := d.db.Exec("INSERT INTO user(first_name, last_name, joined_on) VALUES($1, $2, $3)", user.FirstName, user.LastName, user.JoinedOn)
+	_, err := d.db.Exec("INSERT INTO users(first_name, last_name, username, password, bio, joined_on) VALUES($1, $2, $3, $4, $5, $6)",
+		user.FirstName, user.LastName, user.Username, user.Password, user.Bio, user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to insert user: %v", err)
 		return err
@@ -28,11 +33,26 @@ func (d *driver) InsertUser(user user.User) error {
 	return nil
 }
 
+/* Attempts to retrieve the user with the given username from the database.
+ * Usually used when attempting to see if a username is attached to a user.
+ */
+func (d *driver) GetUserByUsername(username string) (user.User, error) {
+	user := user.User{}
+	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM users WHERE username=$1",
+		username).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
+	if err != nil {
+		log.Printf("Unable to find user with username %v: %v", username, err)
+		return user, err
+	}
+
+	return user, nil
+}
+
 /* Gets the user with the given userID from the database.
  */
 func (d *driver) GetUser(userID int) (user.User, error) {
 	user := user.User{}
-	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM user WHERE id=$1",
+	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM users WHERE id=$1",
 		userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to retrieve user with id %v: %v", userID, err)

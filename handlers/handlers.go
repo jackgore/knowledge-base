@@ -53,7 +53,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.GetUser(user.ID)
+	_, err = h.db.GetUserByUsername(user.Username)
 	if err == nil {
 		log.Printf("Attempted to sign up user %v but username already exists", user.Username)
 		w.WriteHeader(http.StatusBadRequest)

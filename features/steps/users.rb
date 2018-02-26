@@ -20,7 +20,7 @@ end
 
 When("I sign up with valid credentials") do
 		url = 'http://0.0.0.0:3000/users'
-		body = {'first_name': 'Jack', 'last_name': 'Gore'}.to_json
+		body = {'username': 'Test', 'password': 'testpassword','first_name': 'Jack', 'last_name': 'Gore'}.to_json
 		res = sendRequest(url, body)
 		@status_code = Integer(res.code)
 end
