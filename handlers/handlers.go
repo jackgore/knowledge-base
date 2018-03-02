@@ -135,7 +135,14 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Make sure the question is authored by a valid user
+	_, err = h.db.GetUser(q.AuthoredBy)
+	if err != nil {
+		// The case where we receive a question authroed by an invalid user
+		log.Printf("Received question authored by a user that doesn't exist.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{"invalid author", http.StatusBadRequest}).toJSON())
+		return
+	}
 
 	err = h.db.InsertQuestion(q)
 	if err != nil {
