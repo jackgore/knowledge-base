@@ -18,9 +18,16 @@ end
 Given("I do have a running web server") do
 end
 
-When("I sign up with valid credentials") do
+When("I sign up with {word} credentials") do |isValid|
+		# Dirty hack - cucumber doesnt support booleans apparently
+	  if isValid == 'true'
+			   username = 'Test'
+		else
+			   username = 'a'
+		end
+
 		url = 'http://0.0.0.0:3000/users'
-		body = {'username': 'Test', 'password': 'testpassword','first_name': 'Jack', 'last_name': 'Gore'}.to_json
+		body = {'username': username, 'password': 'testpassword','first_name': 'Jack', 'last_name': 'Gore'}.to_json
 		res = sendRequest(url, body)
 		@status_code = Integer(res.code)
 end
