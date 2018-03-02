@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -42,11 +43,15 @@ func getSQLConfig(conf config.Config) sql.Config {
 }
 
 func main() {
+	// Handle command line flag argument
+	confFile := flag.String("config", "config.yml", "specify the config file to use")
+	flag.Parse()
+
 	var api handlers.API
 	var conf config.Config
 	var d storage.Driver
 
-	conf, err := yaml.New("config.yml")
+	conf, err := yaml.New(*confFile)
 	if err != nil {
 		log.Fatalf("unable to parse configuration file", err)
 	}

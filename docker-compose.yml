@@ -6,9 +6,9 @@ PostgreSQL:
   environment:
     - DEBUG=false
 
-    - DB_USER=user
+    - DB_USER=kbase
     - DB_PASS=password
-    - DB_NAME=kbase
+    - DB_NAME=kbase,test
     - DB_TEMPLATE=
 
     - DB_EXTENSION=
@@ -18,5 +18,6 @@ PostgreSQL:
     - REPLICATION_PASS=
     - REPLICATION_SSLMODE=
   volumes:
-    - /user/local/postgresql:/var/lib/postgresql
+    - /usr/local/postgresql:/var/lib/postgresql
     - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - ./data/test.sql:/docker-entrypoint-initdb.d/test/test.sql
