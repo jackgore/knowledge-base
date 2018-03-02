@@ -16,6 +16,7 @@ func New(api handlers.API) (*Server, error) {
 
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
+	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
 
 	return s, nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/models/question"
@@ -82,28 +81,23 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-/* GET /users/{user-id}
+/* GET /users/{username}
  *
- * Signs up the given user by inserting them into the database.
+ * Retrieves the user from the database with the given username
  */
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-	userID := mux.Vars(r)["user-id"]
+	username := mux.Vars(r)["username"]
 
-	id, err := strconv.Atoi(userID)
-	if err != nil {
-		log.Printf("Received bad user id in request paramater: %v", userID)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write((&ErrorResponse{InvalidPathParamError, http.StatusInternalServerError}).toJSON())
-		return
-	}
-
-	user, err := h.db.GetUser(id)
+	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
 		log.Printf("Unable to get user from database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write((&ErrorResponse{DBGetError, http.StatusInternalServerError}).toJSON())
 		return
 	}
+
+	// Now that we have the user set password field to ""
+	user.Password = ""
 
 	contents, err := json.Marshal(user)
 	if err != nil {
