@@ -15,6 +15,7 @@ func New(api handlers.API) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
 
