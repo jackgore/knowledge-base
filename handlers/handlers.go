@@ -88,11 +88,13 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
+	log.Printf("Attempting to retrieve user with username: %v", username)
+
 	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
 		log.Printf("Unable to get user from database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write((&ErrorResponse{DBGetError, http.StatusInternalServerError}).toJSON())
+		w.WriteHeader(http.StatusNotFound)
+		w.Write((&ErrorResponse{DBGetError, http.StatusNotFound}).toJSON())
 		return
 	}
 

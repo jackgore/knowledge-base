@@ -13,3 +13,13 @@ Scenario Outline: The application has a signup endpoint
 	| true    | 200  |
 	| false   | 400  |
 	
+Scenario Outline: The application has a get user endpoint
+  Given I do have a running web server
+  When I try to retrieve user with <username>
+  Then I should see a <code> response
+
+  Examples:
+	| username | code |
+	| notreal  | 404  |
+	| real     | 200  |
+	
