@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/JonathonGore/knowledge-base/creds"
+	"github.com/JonathonGore/knowledge-base/models/answer"
 	"github.com/JonathonGore/knowledge-base/models/question"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/storage"
@@ -179,4 +181,63 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(contents)
 	return
+}
+
+/* POST /questions/{id}
+ *
+ * Receives an answer to the question with id
+ * and submits it as an answer
+ */
+func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{"invalid question id", http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	ans := answer.Answer{}
+	err = utils.UnmarshalRequestBody(r, &ans)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{JSONParseError, http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	err = answer.Validate(ans)
+	if err != nil {
+		log.Printf("Received invalid answer: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{err.Error(), http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	// Ensure the answer is authored by a valid user
+	_, err = h.db.GetUser(ans.AuthoredBy)
+	if err != nil {
+		log.Printf("Received answer authored by a user that doesn't exist.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{"invalid author", http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	// Ensure the question with the given id actually exists
+	_, err = h.db.GetQuestion(id)
+	if err != nil {
+		log.Printf("Received answer to a question that doesn't exist.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write((&ErrorResponse{"invalid question", http.StatusBadRequest}).toJSON())
+		return
+	}
+
+	err = h.db.InsertAnswer(ans)
+	if err != nil {
+		log.Printf("Unable to insert answer into database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write((&ErrorResponse{DBInsertError, http.StatusInternalServerError}).toJSON())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

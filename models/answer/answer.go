@@ -11,3 +11,8 @@ type Answer struct {
 	Accepted    bool      `json:"accepted"`
 	Question    int       `json:"question"`
 }
+
+// TODO
+func Validate(ans Answer) error {
+	return nil
+}

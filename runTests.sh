@@ -21,6 +21,11 @@ knowledge-base -config=${CONFIG_FILE} > test_logs.txt 2>&1 &
 PROJ_PID=$!
 
 # Run our cucumber tests
+echo 'Running cucumber tests...'
 cucumber
+
+# Run our unit tests
+echo 'Running go unit tests...'
+go test ./...
 
 kill $PROJ_PID

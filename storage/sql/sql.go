@@ -62,6 +62,23 @@ func (d *driver) GetUser(userID int) (user.User, error) {
 	return user, nil
 }
 
+/* Gets the question with the given id from the database.
+ */
+func (d *driver) GetQuestion(id int) (question.Question, error) {
+	question := question.Question{}
+	err := d.db.QueryRow(
+		" SELECT post.id as id, submitted_on, title, content, author"+
+			" FROM post NATURAL JOIN question"+
+			" where post.id=$1",
+		id).Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.AuthoredBy)
+	if err != nil {
+		log.Printf("Unable to retrieve question with id %v: %v", id, err)
+		return question, err
+	}
+
+	return question, nil
+}
+
 /* Gets a page of questions from the database
  */
 func (d *driver) GetQuestions() ([]question.Question, error) {
