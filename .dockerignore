@@ -1,3 +1,6 @@
 .git
 vendor/*
 Gopkg.lock
+runTests.sh
+test_logs.txt
+README.md
