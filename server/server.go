@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/handlers"
+	"github.com/JonathonGore/knowledge-base/handlers/wrappers"
 	"github.com/gorilla/mux"
 )
 
@@ -19,6 +20,9 @@ func New(api handlers.API) (*Server, error) {
 	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
+
+	// Attach middleware to mux router
+	s.Router.Use(wrappers.Log)
 
 	return s, nil
 }
