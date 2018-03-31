@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64) NOT NULL,
 	last_name VARCHAR(64) NOT NULL,
+	email VARCHAR(64) NOT NULL,
 	username VARCHAR(32) NOT NULL,
-	password VARCHAR(64) NOT NULL,
 	bio TEXT NOT NULL,
 	joined_on DATE NOT NULL,
 	PRIMARY KEY (id)
