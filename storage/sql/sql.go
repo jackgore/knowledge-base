@@ -23,8 +23,8 @@ type driver struct {
  * TODO: This function should return the id of the inserted user
  */
 func (d *driver) InsertUser(user user.User) error {
-	_, err := d.db.Exec("INSERT INTO users(first_name, last_name, username, password, bio, joined_on) VALUES($1, $2, $3, $4, $5, $6)",
-		user.FirstName, user.LastName, user.Username, user.Password, user.Bio, user.JoinedOn)
+	_, err := d.db.Exec("INSERT INTO users(first_name, last_name, username, password, email, joined_on) VALUES($1, $2, $3, $4, $5, $6)",
+		user.FirstName, user.LastName, user.Username, user.Password, user.Email, user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to insert user: %v", err)
 		return err
