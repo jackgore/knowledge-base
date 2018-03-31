@@ -19,8 +19,6 @@ func UnmarshalRequestBody(r *http.Request, v interface{}) error {
 		return err
 	}
 
-	log.Printf("Body received: %v", string(contents))
-
 	err = json.Unmarshal(contents, v)
 	if err != nil {
 		log.Printf("Unable to parse incoming request body: %v", err)
