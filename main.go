@@ -17,6 +17,11 @@ import (
 	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
 
+/* sslExists(certPath, keyPath) determines if the given ssl certificate
+ * and key file exist in the system.
+ *
+ * Note: may want to do some validation here in the future.
+ */
 func sslExists(certPath, keyPath string) bool {
 	if certPath == "" || keyPath == "" {
 		return false
@@ -43,7 +48,6 @@ func getSQLConfig(conf config.Config) sql.Config {
 }
 
 func main() {
-	// Handle command line flag argument
 	confFile := flag.String("config", "config.yml", "specify the config file to use")
 	flag.Parse()
 

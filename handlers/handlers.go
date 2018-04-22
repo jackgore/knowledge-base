@@ -214,6 +214,7 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ensure the answer is authored by a valid user
+	// TODO: This should be its own function
 	_, err = h.db.GetUser(ans.AuthoredBy)
 	if err != nil {
 		log.Printf("Received answer authored by a user that doesn't exist.")
