@@ -41,7 +41,7 @@ func (d *driver) GetUserByUsername(username string) (user.User, error) {
 	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM users WHERE username=$1",
 		username).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
-		log.Printf("Unable to find user with username %v: %v", username, err)
+		log.Printf("User with username %v not found: %v", username, err)
 		return user, err
 	}
 

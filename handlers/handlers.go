@@ -46,6 +46,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Received the following user to signup: %v", user.SafePrint())
+
 	// verify username and password meet out criteria of valid
 	if err = creds.ValidateSignupCredentials(user.Username, user.Password); err != nil {
 		log.Printf("Attempted to sign up user %v with invalid credentials - %v", user.Username, err)
