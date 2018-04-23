@@ -14,5 +14,5 @@ password = args[2]
 
 r = requests.post("http://localhost:3001/login", json={'username': username, 'password': password})
 
-print("received status code ", r.status_code)
-print("response body ", str(r.content))
+print("received status code: ", r.status_code)
+print("response body: ", r.text)
