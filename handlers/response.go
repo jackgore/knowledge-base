@@ -5,16 +5,20 @@ import (
 	"log"
 )
 
+type LoginResponse struct {
+	SID string `json:"session-id"`
+}
+
 type ErrorResponse struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
 }
 
-func (e *ErrorResponse) toJSONString() string {
-	return string(e.toJSON())
+func JSONString(e interface{}) string {
+	return string(JSON(e))
 }
 
-func (e *ErrorResponse) toJSON() []byte {
+func JSON(e interface{}) []byte {
 	contents, err := json.Marshal(e)
 	if err != nil {
 		log.Printf("Unable to convert erorr response to JSON: %v", err)
