@@ -17,11 +17,13 @@ import (
 )
 
 const (
-	JSONParseError        = "Unable to parse request body as JSON"
-	JSONError             = "Unable to convert into JSON"
-	DBInsertError         = "Unable to insert into databse"
-	DBGetError            = "Unable to retrieve from databse"
-	InvalidPathParamError = "Received bad bath paramater"
+	JSONParseError          = "Unable to parse request body as JSON"
+	JSONError               = "Unable to convert into JSON"
+	DBInsertError           = "Unable to insert into databse"
+	DBGetError              = "Unable to retrieve from databse"
+	InvalidPathParamError   = "Received bad bath paramater"
+	InvalidCredentialsError = "Invalid username or password"
+	EmptyCredentialsError   = "Username and password both must be non-empty"
 )
 
 type Handler struct {
@@ -35,6 +37,8 @@ func New(d storage.Driver) (*Handler, error) {
 /* POST /users
  *
  * Signs up the given user by inserting them into the database.
+ *
+ * Note: Error messages here are user facing
  */
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user := user.User{}
@@ -82,6 +86,66 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+/* POST /login
+ *
+ * Logs the given the user in and creates a new session if needed.
+ *
+ * Expected body:
+ *   { "username": "%v", "password": "%v" }
+ *
+ * Note: Error messages here are user facing
+ */
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	attemptedUser := user.LoginAttempt{}
+	err := utils.UnmarshalRequestBody(r, &attemptedUser)
+	if err != nil {
+		log.Printf("Unable to parse body as JSON: %v", err)
+		http.Error(w, (&ErrorResponse{JSONParseError, http.StatusInternalServerError}).toJSONString(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Received the following user to login: %v", attemptedUser.Username)
+
+	if attemptedUser.Username == "" || attemptedUser.Password == "" {
+		log.Printf("Received empty credentials when performing a login")
+		http.Error(w, (&ErrorResponse{EmptyCredentialsError, http.StatusBadRequest}).toJSONString(), http.StatusBadRequest)
+		return
+	}
+
+	/*
+		// First check to see if the user is already logged in
+		if handler.SessionManager.HasSession(r) {
+			// Already logged in so the request has succeeded
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	*/
+
+	actualUser, err := h.db.GetUserByUsername(attemptedUser.Username)
+	if err != nil {
+		log.Printf("Unable to retrieve user %v from db: %v", attemptedUser.Username, err)
+		// If the user does not exist return 401 (Unauthorized) for security reasons
+		http.Error(w, (&ErrorResponse{InvalidCredentialsError, http.StatusUnauthorized}).toJSONString(), http.StatusUnauthorized)
+		return
+	}
+
+	// NOTE: attemptedUser.Password is plaintext and actualUser.Password is bcrypted hash of password
+	valid := creds.CheckPasswordHash(attemptedUser.Password, actualUser.Password)
+	if !valid {
+		log.Printf("Bad credentials attempting to authenticate user %v", attemptedUser.Username)
+		http.Error(w, (&ErrorResponse{InvalidCredentialsError, http.StatusUnauthorized}).toJSONString(), http.StatusUnauthorized)
+		return
+	}
+
+	/*
+		// Successfully logged in make sure we have a session -- will insert a session id into the ResponseWriters cookies
+		session := handler.SessionManager.SessionStart(w, r)
+		// Links the session id to our username
+		session.Set("username", attemptedUser.Username)
+	*/
 	w.WriteHeader(http.StatusOK)
 }
 

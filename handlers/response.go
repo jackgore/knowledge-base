@@ -10,6 +10,10 @@ type ErrorResponse struct {
 	Code    int    `json:"code"`
 }
 
+func (e *ErrorResponse) toJSONString() string {
+	return string(e.toJSON())
+}
+
 func (e *ErrorResponse) toJSON() []byte {
 	contents, err := json.Marshal(e)
 	if err != nil {
