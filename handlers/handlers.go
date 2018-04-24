@@ -26,6 +26,7 @@ const (
 	InvalidPathParamError   = "Received bad bath paramater"
 	InvalidCredentialsError = "Invalid username or password"
 	LoginFailedError        = "Login failed"
+	LogoutFailedError       = "Logout failed"
 	EmptyCredentialsError   = "Username and password both must be non-empty"
 )
 
@@ -155,6 +156,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(JSON(LoginResponse{s.SID}))
+}
+
+/* POST /logout
+ *
+ * Logout the requesting user by deleting the session
+ */
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	err := h.sessionManager.SessionDestroy(w, r)
+	if err != nil {
+		log.Printf("Unable to logout user: %v", err)
+		http.Error(w, JSONString(ErrorResponse{LogoutFailedError, http.StatusInternalServerError}), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(JSON(SuccessResponse{"Success", http.StatusOK}))
 }
 
 /* GET /users/{username}
