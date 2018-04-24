@@ -87,6 +87,7 @@ func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, usernam
 	s := session.Session{SID: sid, Username: username, Expiry: time.Now().Add(time.Duration(m.maxLifetime) * time.Second)}
 	m.sessionMap.Store(sid, s)
 
+	// HTTP only make it so the cookie is only accessible when sending an http request (so not in javascript)
 	cookie := http.Cookie{Name: m.cookieName, Value: url.QueryEscape(sid), Path: "/", HttpOnly: true, MaxAge: int(m.maxLifetime)}
 	http.SetCookie(w, &cookie)
 

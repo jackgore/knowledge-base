@@ -35,7 +35,7 @@ type Handler struct {
 }
 
 func New(d storage.Driver) (*Handler, error) {
-	sm, err := managers.NewSMManager("knowledge-base", 10000000)
+	sm, err := managers.NewSMManager("knowledge_base", 3600*24*365)
 	if err != nil {
 		return nil, err
 	}
