@@ -210,7 +210,7 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
  * Receives a question to insert, validates it and puts it into the
  * database
  *
- * Expected: { author: <string>, title: <string>, content: <string> }
+ * Expected: { author: <int>, title: <string>, content: <string> }
  */
 func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
@@ -220,6 +220,8 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
 		return
 	}
+
+	log.Printf("Question: %+v", q)
 
 	err = question.Validate(q)
 	if err != nil {
