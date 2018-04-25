@@ -209,6 +209,8 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
  *
  * Receives a question to insert, validates it and puts it into the
  * database
+ *
+ * Expected: { author: <string>, title: <string>, content: <string> }
  */
 func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
@@ -227,7 +229,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.GetUser(q.AuthoredBy)
+	_, err = h.db.GetUser(q.Author)
 	if err != nil {
 		// The case where we receive a question authroed by an invalid user
 		log.Printf("Received question authored by a user that doesn't exist.")

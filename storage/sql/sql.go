@@ -71,7 +71,7 @@ func (d *driver) GetQuestion(id int) (question.Question, error) {
 		" SELECT post.id as id, submitted_on, title, content, author"+
 			" FROM post NATURAL JOIN question"+
 			" where post.id=$1",
-		id).Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.AuthoredBy)
+		id).Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Author)
 	if err != nil {
 		log.Printf("Unable to retrieve question with id %v: %v", id, err)
 		return question, err
@@ -95,7 +95,7 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 	questions := make([]question.Question, 10)
 	for rows.Next() {
 		question := question.Question{}
-		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.AuthoredBy)
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Author)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			continue
@@ -118,7 +118,7 @@ func (d *driver) InsertQuestion(question question.Question) error {
 
 	var postID int
 	err = tx.QueryRow("INSERT INTO post(submitted_on, title, content, author) VALUES($1,$2,$3,$4) returning id;",
-		question.SubmittedOn, question.Title, question.Content, question.AuthoredBy).Scan(&postID)
+		question.SubmittedOn, question.Title, question.Content, question.Author).Scan(&postID)
 	if err != nil {
 		log.Printf("Unable to insert post: %v", err)
 		return tx.Rollback() // Not sure if we want to return this error

@@ -16,9 +16,11 @@ const (
 type Question struct {
 	ID          int       `json:"id"`
 	SubmittedOn time.Time `json:"submitted-on"`
-	AuthoredBy  int       `json:"authored-by"`
+	Author      int       `json:"author"`
 	Title       string    `json:"title"`
 	Content     string    `json:"content"`
+	Views       int       `json:"views"`
+	Upvotes     int       `json:"upvotes"`
 }
 
 /* Validates the given question to make sure all fields all
