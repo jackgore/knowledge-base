@@ -92,7 +92,7 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 		return nil, err
 	}
 
-	questions := make([]question.Question, 10)
+	questions := make([]question.Question, 0)
 	for rows.Next() {
 		question := question.Question{}
 		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Author)
