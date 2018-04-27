@@ -84,8 +84,8 @@ func (d *driver) GetQuestion(id int) (question.Question, error) {
  */
 func (d *driver) GetQuestions() ([]question.Question, error) {
 	rows, err := d.db.Query(
-		" SELECT post.id as id, submitted_on, title, content, author" +
-			" FROM post NATURAL JOIN question" +
+		" SELECT post.id as id, submitted_on, title, content, username, views" +
+			" FROM (post NATURAL JOIN question) JOIN users on (users.id = post.author)" +
 			" order by submitted_on")
 	if err != nil {
 		log.Printf("Unable to receive questions from the db: %v", err)
@@ -95,7 +95,7 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 	questions := make([]question.Question, 0)
 	for rows.Next() {
 		question := question.Question{}
-		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Author)
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Username, &question.Views)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			continue

@@ -16,7 +16,8 @@ const (
 type Question struct {
 	ID          int       `json:"id"`
 	SubmittedOn time.Time `json:"submitted-on"`
-	Author      int       `json:"author"`
+	Author      int       `json:"author,omitempty"`
+	Username    string    `json:"username"`
 	Title       string    `json:"title"`
 	Content     string    `json:"content"`
 	Views       int       `json:"views"`

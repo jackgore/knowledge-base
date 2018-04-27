@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS post (
 	title VARCHAR(256) NOT NULL,
 	content TEXT NOT NULL,
 	author INT NOT NULL,
+	views INT NOT NULL DEFAULT 0,
 	PRIMARY KEY (id),
 	FOREIGN KEY (author) REFERENCES users (id)
 );
