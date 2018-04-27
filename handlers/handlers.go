@@ -22,12 +22,14 @@ const (
 	JSONParseError          = "Unable to parse request body as JSON"
 	JSONError               = "Unable to convert into JSON"
 	DBInsertError           = "Unable to insert into databse"
+	DBUpdateError           = "Unable to update databse"
 	DBGetError              = "Unable to retrieve from databse"
 	InvalidPathParamError   = "Received bad bath paramater"
 	InvalidCredentialsError = "Invalid username or password"
 	LoginFailedError        = "Login failed"
 	LogoutFailedError       = "Logout failed"
 	EmptyCredentialsError   = "Username and password both must be non-empty"
+	BadIDError              = "The requested ID does not exist in our system"
 )
 
 type Handler struct {
@@ -221,8 +223,6 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Question: %+v", q)
-
 	err = question.Validate(q)
 	if err != nil {
 		log.Printf("Received invalid question: %v", err)
@@ -275,6 +275,33 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(contents)
 	return
+}
+
+/* POST /questions/{id}/view
+ *
+ * Upon receiving this request it will add a view to the requested
+ * question in the database
+ */
+func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Received bad question id when trying to increase view count", idStr)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{BadIDError, http.StatusBadRequest}))
+		return
+	}
+
+	err = h.db.ViewQuestion(id)
+	if err != nil {
+		log.Printf("Unable to update view count for question with id: %v. Error: %v", id, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBUpdateError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 /* POST /questions/{id}

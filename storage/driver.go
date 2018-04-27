@@ -10,6 +10,7 @@ type Driver interface {
 	InsertAnswer(answer answer.Answer) error
 
 	InsertQuestion(question question.Question) error
+	ViewQuestion(id int) error
 	GetQuestion(id int) (question.Question, error)
 	GetQuestions() ([]question.Question, error)
 

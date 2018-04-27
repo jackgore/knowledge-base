@@ -80,6 +80,18 @@ func (d *driver) GetQuestion(id int) (question.Question, error) {
 	return question, nil
 }
 
+/* Updates the view count by one for the question with the given id
+ */
+func (d *driver) ViewQuestion(id int) error {
+	_, err := d.db.Exec("UPDATE post SET views = views + 1 WHERE id = $1;", id)
+	if err != nil {
+		log.Printf("Unable to update view count for question with id %v: %v", id, err)
+		return err
+	}
+
+	return nil
+}
+
 /* Gets a page of questions from the database
  */
 func (d *driver) GetQuestions() ([]question.Question, error) {
