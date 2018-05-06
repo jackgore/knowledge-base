@@ -2,6 +2,9 @@
 vendor
 Gopkg.lock
 
+# Go binary
+knowledge-base
+
 # Mac files
 .DS_STORE
 

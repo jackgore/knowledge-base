@@ -9,6 +9,7 @@ type API interface {
 	SubmitQuestion(w http.ResponseWriter, r *http.Request)
 	ViewQuestion(w http.ResponseWriter, r *http.Request)
 	GetQuestions(w http.ResponseWriter, r *http.Request)
+	GetQuestion(w http.ResponseWriter, r *http.Request)
 
 	Signup(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)

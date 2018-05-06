@@ -251,6 +251,41 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+/* GET /question/{id}
+ *
+ * Receives a page of questions
+ * TODO: accept query params
+ */
+func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Received bad question id when trying to retrieve question", idStr)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{BadIDError, http.StatusBadRequest}))
+		return
+	}
+
+	questions, err := h.db.GetQuestion(id)
+	if err != nil {
+		log.Printf("Unable to get question from database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		return
+	}
+
+	contents, err := json.Marshal(questions)
+	if err != nil {
+		log.Printf("Unable to convert question to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.Write(contents)
+}
+
 /* GET /questions
  *
  * Receives a page of questions
