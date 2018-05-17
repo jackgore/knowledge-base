@@ -253,8 +253,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 /* GET /question/{id}
  *
- * Receives a page of questions
- * TODO: accept query params
+ * Retrieves a question from the database with the given id
  */
 func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]

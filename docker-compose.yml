@@ -20,4 +20,4 @@ PostgreSQL:
   volumes:
     - /usr/local/postgresql:/var/lib/postgresql
     - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./data/test.sql:/docker-entrypoint-initdb.d/test/test.sql
+    - ./data/init.sql:/docker-entrypoint-initdb.d/test/test.sql

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +14,10 @@ import (
  * Returns: error should one occur
  */
 func UnmarshalRequestBody(r *http.Request, v interface{}) error {
+	if r == nil {
+		return errors.New("http request must be non-nil")
+	}
+
 	contents, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Unable to read incoming request body: %v", err)
