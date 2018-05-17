@@ -18,6 +18,7 @@ type User struct {
 }
 
 // Formats the users to a string omitting the password
+// Used if we ever need to log the user object
 func (user *User) SafePrint() string {
 	cuser := *user
 	cuser.Password = ""
