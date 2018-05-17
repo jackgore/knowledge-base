@@ -21,8 +21,8 @@ func (s *QuestionTestSuite) TestValidateQuestion() {
 }
 
 func (s *QuestionTestSuite) TestValidateQuestionContent() {
-	s.NotNil(validateQuestionTitle(""))
-	s.NotNil(validateQuestionTitle("abc"))
+	s.NotNil(validateQuestionContent(""))
+	s.NotNil(validateQuestionContent("abc"))
 }
 
 func (s *QuestionTestSuite) TestValidateQuestionTitle() {
