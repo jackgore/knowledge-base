@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS organization (
 	id SERIAL NOT NULL,
-	name VARCHAR(64) NOT NULL,
+	name VARCHAR(64) NOT NULL UNIQUE,
 	created_on DATE NOT NULL,
 	is_public BOOLEAN NOT NULL DEFAULT true,
 	PRIMARY KEY (id)
@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS team (
 	created_on DATE NOT NULL,
 	is_public BOOLEAN NOT NULL DEFAULT true,
 	PRIMARY KEY (id),
-	FOREIGN KEY (org_id) REFERENCES organization (id)
+	FOREIGN KEY (org_id) REFERENCES organization (id),
+	UNIQUE (org_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS member_of (
