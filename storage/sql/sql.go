@@ -6,13 +6,69 @@ import (
 	"log"
 
 	"github.com/JonathonGore/knowledge-base/models/answer"
+	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/team"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	_ "github.com/lib/pq"
 )
 
 type driver struct {
 	db *sql.DB
+}
+
+/* Gets the org with the given ID from the database.
+ */
+func (d *driver) GetOrganization(orgID int) (organization.Organization, error) {
+	org := organization.Organization{}
+	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM team WHERE id=$1",
+		orgID).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+	if err != nil {
+		log.Printf("Unable to retrieve org with id %v: %v", orgID, err)
+		return org, err
+	}
+
+	return org, nil
+}
+
+/* Inserts the given organization into the database
+ */
+func (d *driver) InsertOrganization(org organization.Organization) error {
+	_, err := d.db.Exec("INSERT INTO organization(name, created_on, is_public) VALUES($1, $2, $3)",
+		org.Name, org.CreatedOn, org.IsPublic)
+	if err != nil {
+		log.Printf("Unable to insert org: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+/* Gets the team with the given ID from the database.
+ */
+func (d *driver) GetTeam(teamID int) (team.Team, error) {
+	t := team.Team{}
+	err := d.db.QueryRow("SELECT id, org_id, name, created_on, is_public FROM team WHERE id=$1",
+		teamID).Scan(&t.ID, &t.Organization, &t.Name, &t.CreatedOn, &t.IsPublic)
+	if err != nil {
+		log.Printf("Unable to retrieve team with id %v: %v", teamID, err)
+		return t, err
+	}
+
+	return t, nil
+}
+
+/* Inserts the given team into the database
+ */
+func (d *driver) InsertTeam(t team.Team) error {
+	_, err := d.db.Exec("INSERT INTO team(org_id, name, created_on, is_public) VALUES($1, $2, $3, $4)",
+		t.Organization, t.Name, t.CreatedOn, t.IsPublic)
+	if err != nil {
+		log.Printf("Unable to insert team: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 /* Inserts the given user into the database.
@@ -53,8 +109,8 @@ func (d *driver) GetUserByUsername(username string) (user.User, error) {
  */
 func (d *driver) GetUser(userID int) (user.User, error) {
 	user := user.User{}
-	err := d.db.QueryRow("SELECT first_name, last_name, joined_on FROM users WHERE id=$1",
-		userID).Scan(&user.FirstName, &user.LastName, &user.JoinedOn)
+	err := d.db.QueryRow("SELECT id, first_name, last_name, joined_on FROM users WHERE id=$1",
+		userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.JoinedOn)
 	if err != nil {
 		log.Printf("Unable to retrieve user with id %v: %v", userID, err)
 		return user, err

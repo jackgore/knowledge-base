@@ -2,6 +2,7 @@ package organization
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -10,10 +11,12 @@ const (
 )
 
 type Organization struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	MemberCount int    `json:"member-count"`
-	AdminCount  int    `json:"admin-count"`
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	CreatedOn   time.Time `json:"created-on"`
+	IsPublic    bool      `json:"is-public"`
+	MemberCount int       `json:"member-count"`
+	AdminCount  int       `json:"admin-count"`
 
 	Members []int `json:"members"` // Note: Not sure if it makes sense to have these fields
 	Admins  []int `json:"admins"`

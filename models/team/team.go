@@ -2,6 +2,7 @@ package team
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -10,11 +11,13 @@ const (
 )
 
 type Team struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Organization string `json:"organization"`
-	MemberCount int     `json:"member-count"`
-	AdminCount  int     `json:"admin-count"`
+	ID           int       `json:"id"`
+	Name         string    `json:"name"`
+	Organization string    `json:"organization"`
+	CreatedOn    time.Time `json:"created-on"`
+	IsPublic     bool      `json:"is-public"`
+	MemberCount  int       `json:"member-count"`
+	AdminCount   int       `json:"admin-count"`
 }
 
 /* Validates the given org to make sure all fields all
