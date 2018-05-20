@@ -22,9 +22,9 @@ func New(api handlers.API) (*Server, error) {
 	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
 
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
+	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
 	s.Router.HandleFunc("/login", api.Login).Methods(http.MethodPost)
 	s.Router.HandleFunc("/logout", api.Logout).Methods(http.MethodPost)
-	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
 
 	// Attach middleware to mux router
 	s.Router.Use(wrappers.Log)
@@ -34,7 +34,7 @@ func New(api handlers.API) (*Server, error) {
 
 func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if origin := req.Header.Get("Origin"); origin != "" {
-		rw.Header().Set("Access-Control-Allow-Origin", origin) // Restrict this to proper origins
+		rw.Header().Set("Access-Control-Allow-Origin", origin) // TODO: Restrict this to proper origins
 		rw.Header().Set("Access-Control-Allow-Credentials", "true")
 		rw.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		rw.Header().Set("Access-Control-Allow-Headers",

@@ -1,3 +1,37 @@
+CREATE TABLE IF NOT EXISTS organization (
+	id SERIAL NOT NULL,
+	name VARCHAR(64) NOT NULL,
+	created_on DATE NOT NULL,
+	is_public BOOLEAN NOT NULL DEFAULT true,
+	PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS team (
+	id SERIAL NOT NULL,
+	org_id INT NOT NULL,
+	name VARCHAR(64) NOT NULL,
+	created_on DATE NOT NULL,
+	is_public BOOLEAN NOT NULL DEFAULT true,
+	PRIMARY KEY (id),
+	FOREIGN KEY (org_id) REFERENCES organization (id)
+);
+
+CREATE TABLE IF NOT EXISTS member_of (
+	user_id INT NOT NULL,
+	team_id INT NOT NULL,
+	PRIMARY KEY (user_id, team_id),
+	FOREIGN KEY (user_id) REFERENCES users (id),
+	FOREIGN KEY (team_id) REFERENCES team (id)
+);
+
+CREATE TABLE IF NOT EXISTS team_of (
+	org_id INT NOT NULL,
+	team_id INT NOT NULL,
+	PRIMARY KEY (org_id, team_id),
+	FOREIGN KEY (org_id) REFERENCES organization (id),
+	FOREIGN KEY (team_id) REFERENCES team (id)
+);
+
 CREATE TABLE IF NOT EXISTS users (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64) NOT NULL,
