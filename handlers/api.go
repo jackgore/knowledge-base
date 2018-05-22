@@ -15,4 +15,11 @@ type API interface {
 	GetUser(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	Logout(w http.ResponseWriter, r *http.Request)
+
+	GetOrganizations(w http.ResponseWriter, r *http.Request)
+	GetOrganization(w http.ResponseWriter, r *http.Request)
+	CreateOrganization(w http.ResponseWriter, r *http.Request)
+
+	GetTeams(w http.ResponseWriter, r *http.Request)
+	CreateTeam(w http.ResponseWriter, r *http.Request)
 }

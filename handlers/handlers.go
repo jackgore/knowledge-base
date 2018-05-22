@@ -9,7 +9,9 @@ import (
 
 	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/models/answer"
+	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/team"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/session/managers"
@@ -44,6 +46,196 @@ func New(d storage.Driver) (*Handler, error) {
 	}
 
 	return &Handler{d, sm}, nil
+}
+
+/* GET /organizations
+ *
+ * Receives a page of organizations
+ * TODO: accept query params
+ */
+func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
+	orgs, err := h.db.GetOrganizations()
+	if err != nil {
+		log.Printf("Unable to get questions from database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		return
+	}
+
+	contents, err := json.Marshal(orgs)
+	if err != nil {
+		log.Printf("Unable to convert questions to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.Write(contents)
+	return
+
+}
+
+/* GET /organization/{name}
+ *
+ * Receives a single organization
+ * TODO: accept query params
+ */
+func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	orgName := mux.Vars(r)["name"]
+
+	// TODO: Add existance check
+	org, err := h.db.GetOrganizationByName(orgName)
+	if err != nil {
+		log.Printf("Unable to get organization: %v", err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(JSON(ErrorResponse{DBGetError, http.StatusNotFound}))
+		return
+	}
+
+	contents, err := json.Marshal(org)
+	if err != nil {
+		log.Printf("Unable to convert organization to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.Write(contents)
+	return
+
+}
+
+/* POST /organizations
+ *
+ * Creates a new organization
+ *
+ * Note: Error messages here are user facing
+ */
+func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	org := organization.Organization{}
+	err := utils.UnmarshalRequestBody(r, &org)
+	if err != nil {
+		log.Printf("Unable to parse body as JSON: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		return
+	}
+
+	log.Printf("Recieved the following organization to create: %+v", org)
+
+	err = organization.Validate(org)
+	if err != nil {
+		log.Printf("Unable to create organization: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to create organization: %v", err),
+			http.StatusBadRequest}))
+		return
+	}
+
+	_, err = h.db.GetOrganizationByName(org.Name)
+	if err == nil {
+		log.Printf("Attempted to create organization %v but name already exists", org.Name)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Attempted to create organization: %v - but name already exists", org.Name),
+			http.StatusBadRequest}))
+		return
+	}
+
+	err = h.db.InsertOrganization(org)
+	if err != nil {
+		log.Printf("Unable to insert organization into database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+/* GET /organizations/<org>/teams
+ *
+ * Receives a page of teams within an organization
+ * TODO: accept query params
+ */
+func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
+	orgName, _ := mux.Vars(r)["organization"]
+
+	_, err := h.db.GetOrganizationByName(orgName)
+	if err == nil {
+		log.Printf("Unable to get teams, organization %v does not exist", orgName)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to get teams, organization %v does not exist", orgName),
+			http.StatusBadRequest}))
+		return
+	}
+
+	orgs, err := h.db.GetOrganizations()
+	if err != nil {
+		log.Printf("Unable to get questions from database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		return
+	}
+
+	contents, err := json.Marshal(orgs)
+	if err != nil {
+		log.Printf("Unable to convert questions to byte array")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.Write(contents)
+	return
+
+}
+
+/* POST /organizations/<organization>/teams
+ *
+ * Creates a new team within the organization
+ *
+ * Note: Error messages here are user facing
+ */
+func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
+	orgName, _ := mux.Vars(r)["organization"]
+
+	t := team.Team{}
+	err := utils.UnmarshalRequestBody(r, &t)
+	if err != nil {
+		log.Printf("Unable to parse body as JSON: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		return
+	}
+
+	err = team.Validate(t)
+	if err != nil {
+		log.Printf("Unable to create team: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to create team: %v", err),
+			http.StatusBadRequest}))
+		return
+	}
+
+	org, err := h.db.GetOrganizationByName(orgName)
+	if err == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Organization: %v does not exist", orgName),
+			http.StatusBadRequest}))
+		return
+	}
+
+	t.Organization = org.ID // Link the team to the org
+
+	err = h.db.InsertTeam(t)
+	if err != nil {
+		log.Printf("Unable to insert team into database: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 /* POST /users

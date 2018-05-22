@@ -42,4 +42,18 @@ module Util
 
 			return Integer(res.code)
 	end
+	
+	def Util.getOrganization(name)
+			url = 'http://0.0.0.0:3001/organizations/' + name
+			res = sendGetRequest(url)
+
+			return Integer(res.code)
+	end
+	
+	def Util.insertOrganization(body)
+			url = 'http://0.0.0.0:3001/organizations'
+			res = sendPostRequest(url, body)
+		 
+			return Integer(res.code)
+	end
 end

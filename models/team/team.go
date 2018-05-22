@@ -13,7 +13,7 @@ const (
 type Team struct {
 	ID           int       `json:"id"`
 	Name         string    `json:"name"`
-	Organization string    `json:"organization"`
+	Organization int       `json:"organization"`
 	CreatedOn    time.Time `json:"created-on"`
 	IsPublic     bool      `json:"is-public"`
 	MemberCount  int       `json:"member-count"`

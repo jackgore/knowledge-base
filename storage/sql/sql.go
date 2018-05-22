@@ -31,6 +31,45 @@ func (d *driver) GetOrganization(orgID int) (organization.Organization, error) {
 	return org, nil
 }
 
+/* Gets the org with the given name.
+ */
+func (d *driver) GetOrganizationByName(name string) (organization.Organization, error) {
+	org := organization.Organization{}
+	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM organization WHERE name=$1",
+		name).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+	if err != nil {
+		log.Printf("Unable to retrieve org with name %v: %v", name, err)
+		return org, err
+	}
+
+	return org, nil
+}
+
+/* Gets a page of organizations from the database
+ */
+func (d *driver) GetOrganizations() ([]organization.Organization, error) {
+	rows, err := d.db.Query("SELECT id, name, created_on, is_public" +
+		" FROM organization" +
+		" order by name")
+	if err != nil {
+		log.Printf("Unable to receive organizations from the db: %v", err)
+		return nil, err
+	}
+
+	orgs := make([]organization.Organization, 0)
+	for rows.Next() {
+		org := organization.Organization{}
+		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		orgs = append(orgs, org)
+	}
+
+	return orgs, err
+}
+
 /* Inserts the given organization into the database
  */
 func (d *driver) InsertOrganization(org organization.Organization) error {
@@ -46,12 +85,53 @@ func (d *driver) InsertOrganization(org organization.Organization) error {
 
 /* Gets the team with the given ID from the database.
  */
+func (d *driver) GetTeams(org string) ([]team.Team, error) {
+	rows, err := d.db.Query("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public",
+		" FROM team JOIN organiation on (team.org_id = organization.id)"+
+			" WHERE organization.name = $1"+
+			" order by team.name", org)
+	if err != nil {
+		log.Printf("Unable to receive teams for org %v from the db: %v", org, err)
+		return nil, err
+	}
+
+	teams := make([]team.Team, 0)
+	for rows.Next() {
+		team := team.Team{}
+		err := rows.Scan(&team.ID, &team.Organization, &team.Name, &team.CreatedOn, &team.IsPublic)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		teams = append(teams, team)
+	}
+
+	return teams, err
+}
+
+/* Gets the team with the given ID from the database.
+ */
 func (d *driver) GetTeam(teamID int) (team.Team, error) {
 	t := team.Team{}
 	err := d.db.QueryRow("SELECT id, org_id, name, created_on, is_public FROM team WHERE id=$1",
 		teamID).Scan(&t.ID, &t.Organization, &t.Name, &t.CreatedOn, &t.IsPublic)
 	if err != nil {
 		log.Printf("Unable to retrieve team with id %v: %v", teamID, err)
+		return t, err
+	}
+
+	return t, nil
+}
+
+/* Gets the team with the given name from the given org from the database.
+ */
+func (d *driver) GetTeamByName(org, name string) (team.Team, error) {
+	t := team.Team{}
+	err := d.db.QueryRow("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public FROM team JOIN organization ON "+
+		" (team.org_id = organization.id) WHERE organization.name=$1 and team.name=$2",
+		org, name).Scan(&t.ID, &t.Organization, &t.Name, &t.CreatedOn, &t.IsPublic)
+	if err != nil {
+		log.Printf("Unable to retrieve team with name %v from organization %v: %v", name, org, err)
 		return t, err
 	}
 
