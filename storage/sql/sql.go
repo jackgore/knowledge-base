@@ -83,13 +83,13 @@ func (d *driver) InsertOrganization(org organization.Organization) error {
 	return nil
 }
 
-/* Gets the team with the given ID from the database.
+/* Gets the teams for the given org from the database.
  */
 func (d *driver) GetTeams(org string) ([]team.Team, error) {
-	rows, err := d.db.Query("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public",
-		" FROM team JOIN organiation on (team.org_id = organization.id)"+
-			" WHERE organization.name = $1"+
-			" order by team.name", org)
+	rows, err := d.db.Query("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public"+
+		" FROM team JOIN organization on (team.org_id = organization.id)"+
+		" WHERE organization.name = $1"+
+		" order by team.name", org)
 	if err != nil {
 		log.Printf("Unable to receive teams for org %v from the db: %v", org, err)
 		return nil, err

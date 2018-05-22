@@ -152,7 +152,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-/* GET /organizations/<org>/teams
+/* GET /organizations/<organization>/teams
  *
  * Receives a page of teams within an organization
  * TODO: accept query params
@@ -161,7 +161,7 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
 	orgName, _ := mux.Vars(r)["organization"]
 
 	_, err := h.db.GetOrganizationByName(orgName)
-	if err == nil {
+	if err != nil {
 		log.Printf("Unable to get teams, organization %v does not exist", orgName)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to get teams, organization %v does not exist", orgName),
@@ -169,17 +169,17 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgs, err := h.db.GetOrganizations()
+	teams, err := h.db.GetTeams(orgName)
 	if err != nil {
-		log.Printf("Unable to get questions from database: %v", err)
+		log.Printf("Unable to get teams from database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
 		return
 	}
 
-	contents, err := json.Marshal(orgs)
+	contents, err := json.Marshal(teams)
 	if err != nil {
-		log.Printf("Unable to convert questions to byte array")
+		log.Printf("Unable to convert teams to byte array")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
 		return
