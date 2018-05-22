@@ -35,6 +35,13 @@ module Util
 		 
 			return Integer(res.code)
 	end
+	
+	def Util.insertTeam(body, orgName)
+			url = 'http://0.0.0.0:3001/organizations/' + orgName + '/teams'
+			res = sendPostRequest(url, body)
+		 
+			return Integer(res.code)
+	end
 
 	def Util.getUser(username)
 			url = 'http://0.0.0.0:3001/users/' + username

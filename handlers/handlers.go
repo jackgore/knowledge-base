@@ -75,13 +75,13 @@ func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/* GET /organization/{name}
+/* GET /organization/{organization}
  *
  * Receives a single organization
  * TODO: accept query params
  */
 func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
-	orgName := mux.Vars(r)["name"]
+	orgName := mux.Vars(r)["organization"]
 
 	// TODO: Add existance check
 	org, err := h.db.GetOrganizationByName(orgName)
@@ -218,11 +218,20 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	org, err := h.db.GetOrganizationByName(orgName)
-	if err == nil {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(JSON(ErrorResponse{fmt.Sprintf("Organization: %v does not exist", orgName),
 			http.StatusBadRequest}))
 		return
+	}
+
+	_, err = h.db.GetTeamByName(orgName, t.Name)
+	if err == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{fmt.Sprintf("Team with name %v within %v already exists", t.Name, orgName),
+			http.StatusBadRequest}))
+		return
+
 	}
 
 	t.Organization = org.ID // Link the team to the org

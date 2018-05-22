@@ -27,8 +27,10 @@ func New(api handlers.API) (*Server, error) {
 	s.Router.HandleFunc("/logout", api.Logout).Methods(http.MethodPost)
 
 	s.Router.HandleFunc("/organizations", api.GetOrganizations).Methods(http.MethodGet)
-	s.Router.HandleFunc("/organizations/{name}", api.GetOrganization).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{organization}", api.GetOrganization).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations", api.CreateOrganization).Methods(http.MethodPost)
+
+	s.Router.HandleFunc("/organizations/{organization}/teams", api.CreateTeam).Methods(http.MethodPost)
 
 	// Attach middleware to mux router
 	s.Router.Use(wrappers.Log)

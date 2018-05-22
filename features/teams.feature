@@ -23,3 +23,17 @@ Scenario Outline: The application has a get organization endpoint
 	| fake    | 404  |
 	| real    | 200  |
 	
+Scenario Outline: The application has a create team endpoint
+  Given I do have a running web server
+  When I post a <orgValid> organization
+  And I post a <teamValid> team
+  Then I should see a <code> response
+
+  Examples:
+	| orgValid | teamValid | code |
+	| true     | true      | 200  |
+	| true     | false     | 400  |
+	| false    | false     | 400  |
+	| false    | true      | 400  |
+	
+	
