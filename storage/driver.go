@@ -6,6 +6,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/question"
 	"github.com/JonathonGore/knowledge-base/models/team"
 	"github.com/JonathonGore/knowledge-base/models/user"
+	"github.com/JonathonGore/knowledge-base/session"
 )
 
 type Driver interface {
@@ -20,6 +21,10 @@ type Driver interface {
 	InsertUser(user user.User) error
 	GetUser(userID int) (user.User, error)
 	GetUserByUsername(username string) (user.User, error)
+
+	InsertSession(s session.Session) error
+	GetSession(sid string) (session.Session, error)
+	DeleteSession(sid string) error
 
 	GetTeam(teamID int) (team.Team, error)
 	GetTeamByName(org, team string) (team.Team, error)
