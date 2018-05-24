@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/JonathonGore/knowledge-base/session"
+	"github.com/JonathonGore/knowledge-base/storage"
 )
 
 // Manager implementation using a go sync map
@@ -20,11 +21,12 @@ type SMManager struct {
 	cookieName  string   // Name of the cookie we are storing in the users http cookies
 	sessionMap  sync.Map // Thread safe map for storing our sessions
 	maxLifetime int64    // Expiry time for our sessions
+	db          storage.Driver
 }
 
 // Creates a new session manager based on the given paramaters
-func NewSMManager(cookieName string, maxlifetime int64) (*SMManager, error) {
-	return &SMManager{cookieName: cookieName, maxLifetime: maxlifetime, sessionMap: sync.Map{}}, nil
+func NewSMManager(cookieName string, maxlifetime int64, db storage.Driver) (*SMManager, error) {
+	return &SMManager{cookieName: cookieName, maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
 }
 
 /*
@@ -37,29 +39,10 @@ func (manager *Manager) GC() {
 }
 */
 
-func (m *SMManager) GetSession(r *http.Request) (session.Session, error) {
+func (m *SMManager) unwrapSession(sid string, obj interface{}) (session.Session, error) {
 	var s session.Session
 
-	if !m.HasSession(r) {
-		return s, errors.New("could not retrieve requested session")
-	}
-
-	cookie, err := r.Cookie(m.cookieName)
-	if err != nil {
-		return s, errors.New("no session cookie in http request")
-	}
-
-	sid, err := url.QueryUnescape(cookie.Value)
-	if err != nil {
-		return s, fmt.Errorf("corrupt value store as session id: %v", err)
-	}
-
-	isession, ok := m.sessionMap.Load(sid)
-	if !ok {
-		return s, errors.New("unable to get session, likely invalid session id")
-	}
-
-	s, ok = isession.(session.Session)
+	s, ok := obj.(session.Session)
 	if !ok {
 		log.Printf("Corrupt value stored in session map for id: %v", sid)
 		return s, fmt.Errorf("Corrupt value stored in session map for id: %v", sid)
@@ -68,6 +51,41 @@ func (m *SMManager) GetSession(r *http.Request) (session.Session, error) {
 	return s, nil
 }
 
+func (m *SMManager) GetSession(r *http.Request) (session.Session, error) {
+	var s session.Session
+
+	if !m.HasSession(r) {
+		return s, errors.New("no session cookie in http request")
+	}
+
+	cookie, _ := r.Cookie(m.cookieName) // Error can be ignored as this is checked in m.HasSession(r)
+
+	sid, err := url.QueryUnescape(cookie.Value)
+	if err != nil {
+		return s, fmt.Errorf("corrupt value store as session id: %v", err)
+	}
+
+	obj, ok := m.sessionMap.Load(sid)
+	if ok {
+		s, err = m.unwrapSession(sid, obj)
+		if err != nil {
+			m.sessionMap.Delete(sid)
+			m.db.DeleteSession(sid)
+			return s, err
+		}
+		return s, nil
+	}
+
+	// If session map is not found in cache we must consult the db
+	s, err = m.db.GetSession(sid)
+	if err != nil {
+		return s, errors.New("unable to get session, likely invalid session id")
+	}
+
+	return s, nil
+}
+
+// Determines if there is a session cookie attached to the request
 func (m *SMManager) HasSession(r *http.Request) bool {
 	cookie, err := r.Cookie(m.cookieName)
 	return (err == nil && cookie.Value != "")
@@ -77,15 +95,16 @@ func (m *SMManager) HasSession(r *http.Request) bool {
 func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, username string) (session.Session, error) {
 	// TODO: Right now if there is a corrupt value for the cookie it will never be repaired
 	if m.HasSession(r) {
-		log.Printf("Found existing session to use")
+		log.Printf("Found existing session in request to use")
 		return m.GetSession(r)
 	}
 
 	log.Printf("No session cookie found, creating one now")
 
 	sid := m.generateSessionID()
-	s := session.Session{SID: sid, Username: username, Expiry: time.Now().Add(time.Duration(m.maxLifetime) * time.Second)}
+	s := session.Session{SID: sid, Username: username, ExpiresOn: time.Now().Add(time.Duration(m.maxLifetime) * time.Second)}
 	m.sessionMap.Store(sid, s)
+	m.db.InsertSession(s)
 
 	// HTTP only make it so the cookie is only accessible when sending an http request (so not in javascript)
 	cookie := http.Cookie{Name: m.cookieName, Value: url.QueryEscape(sid), Path: "/", HttpOnly: true, MaxAge: int(m.maxLifetime)}
@@ -103,6 +122,7 @@ func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error
 	}
 
 	m.sessionMap.Delete(cookie.Value)
+	m.db.DeleteSession(cookie.Value)
 	// Overwrite the current cookie with an expired one
 	ec := http.Cookie{Name: m.cookieName, Path: "/", HttpOnly: true, Expires: time.Unix(0, 0), MaxAge: -1}
 	http.SetCookie(w, &ec)

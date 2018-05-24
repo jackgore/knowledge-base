@@ -33,6 +33,14 @@ CREATE TABLE IF NOT EXISTS team_of (
 	FOREIGN KEY (team_id) REFERENCES team (id)
 );
 
+CREATE TABLE IF NOT EXISTS session (
+	sid VARCHAR(64) NOT NULL,
+	username VARCHAR(64) NOT NULL,
+	created_on DATE NOT NULL,
+	expires_on DATA NOT NULL,
+	PRIMARY KEY (sid)	
+);
+
 CREATE TABLE IF NOT EXISTS users (
 	id SERIAL NOT NULL,
 	first_name VARCHAR(64) NOT NULL,
