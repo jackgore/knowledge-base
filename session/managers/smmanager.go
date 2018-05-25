@@ -18,15 +18,16 @@ import (
 
 // Manager implementation using a go sync map
 type SMManager struct {
-	cookieName  string   // Name of the cookie we are storing in the users http cookies
-	sessionMap  sync.Map // Thread safe map for storing our sessions
-	maxLifetime int64    // Expiry time for our sessions
-	db          storage.Driver
+	cookieName       string   // Name of the cookie we are storing in the users http cookies
+	publicCookieName string   // Name of the cookie we are storing in the users http cookies
+	sessionMap       sync.Map // Thread safe map for storing our sessions
+	maxLifetime      int64    // Expiry time for our sessions
+	db               storage.Driver
 }
 
 // Creates a new session manager based on the given paramaters
 func NewSMManager(cookieName string, maxlifetime int64, db storage.Driver) (*SMManager, error) {
-	return &SMManager{cookieName: cookieName, maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
+	return &SMManager{cookieName: cookieName, publicCookieName: "pb-" + cookieName, maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
 }
 
 /*
@@ -106,6 +107,10 @@ func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, usernam
 	m.sessionMap.Store(sid, s)
 	m.db.InsertSession(s)
 
+	// Non-http only cookie
+	publicCookie := http.Cookie{Name: m.publicCookieName, Value: url.QueryEscape(username), Path: "/", MaxAge: int(m.maxLifetime)}
+	http.SetCookie(w, &publicCookie)
+
 	// HTTP only make it so the cookie is only accessible when sending an http request (so not in javascript)
 	cookie := http.Cookie{Name: m.cookieName, Value: url.QueryEscape(sid), Path: "/", HttpOnly: true, MaxAge: int(m.maxLifetime)}
 	http.SetCookie(w, &cookie)
@@ -125,7 +130,9 @@ func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error
 	m.db.DeleteSession(cookie.Value)
 	// Overwrite the current cookie with an expired one
 	ec := http.Cookie{Name: m.cookieName, Path: "/", HttpOnly: true, Expires: time.Unix(0, 0), MaxAge: -1}
+	epc := http.Cookie{Name: m.cookieName, Path: "/", Expires: time.Unix(0, 0), MaxAge: -1}
 	http.SetCookie(w, &ec)
+	http.SetCookie(w, &epc)
 
 	return nil
 }
