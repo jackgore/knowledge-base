@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS session (
 	sid VARCHAR(64) NOT NULL,
 	username VARCHAR(64) NOT NULL,
 	created_on DATE NOT NULL,
-	expires_on DATA NOT NULL,
+	expires_on DATE NOT NULL,
 	PRIMARY KEY (sid)	
 );
 
