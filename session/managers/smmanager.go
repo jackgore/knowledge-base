@@ -27,7 +27,7 @@ type SMManager struct {
 
 // Creates a new session manager based on the given paramaters
 func NewSMManager(cookieName string, maxlifetime int64, db storage.Driver) (*SMManager, error) {
-	return &SMManager{cookieName: cookieName, publicCookieName: "pb-" + cookieName, maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
+	return &SMManager{cookieName: cookieName, publicCookieName: "kb-public", maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
 }
 
 /*
@@ -130,7 +130,7 @@ func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error
 	m.db.DeleteSession(cookie.Value)
 	// Overwrite the current cookie with an expired one
 	ec := http.Cookie{Name: m.cookieName, Path: "/", HttpOnly: true, Expires: time.Unix(0, 0), MaxAge: -1}
-	epc := http.Cookie{Name: m.cookieName, Path: "/", Expires: time.Unix(0, 0), MaxAge: -1}
+	epc := http.Cookie{Name: m.publicCookieName, Path: "/", Expires: time.Unix(0, 0), MaxAge: -1}
 	http.SetCookie(w, &ec)
 	http.SetCookie(w, &epc)
 
