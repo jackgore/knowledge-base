@@ -15,7 +15,7 @@ type Driver interface {
 	// TODO: GetQuestion should return an additional boolean to indicate existance
 	GetQuestion(id int) (question.Question, error)
 	GetQuestions() ([]question.Question, error)
-	InsertQuestion(question question.Question) error
+	InsertQuestion(question question.Question) (int, error)
 	ViewQuestion(id int) error
 
 	InsertUser(user user.User) error

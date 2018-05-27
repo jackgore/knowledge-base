@@ -441,8 +441,6 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Session retrieved: %+v", sess)
-
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		// The case where we receive a question authroed by an invalid user
@@ -454,9 +452,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	q.Author = u.ID
 
-	log.Printf("Question to insert: %+v", q)
-
-	err = h.db.InsertQuestion(q)
+	id, err := h.db.InsertQuestion(q)
 	if err != nil {
 		log.Printf("Unable to insert question into database: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -464,7 +460,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Write(JSON(IDResponse{id}))
 }
 
 /* GET /question/{id}

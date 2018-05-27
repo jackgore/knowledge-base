@@ -297,28 +297,28 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 /* Inserts the given question into the database.
  * This is an all or nothing insertion.
  */
-func (d *driver) InsertQuestion(question question.Question) error {
+func (d *driver) InsertQuestion(question question.Question) (int, error) {
+	postID := -1
 	tx, err := d.db.Begin()
 	if err != nil {
 		log.Printf("Unable to begin transaction: %v", err)
-		return err
+		return postID, err
 	}
 
-	var postID int
 	err = tx.QueryRow("INSERT INTO post(submitted_on, title, content, author) VALUES($1,$2,$3,$4) returning id;",
 		question.SubmittedOn, question.Title, question.Content, question.Author).Scan(&postID)
 	if err != nil {
 		log.Printf("Unable to insert post: %v", err)
-		return tx.Rollback() // Not sure if we want to return this error
+		return postID, tx.Rollback() // Not sure if we want to return this error
 	}
 
 	_, err = tx.Exec("INSERT INTO question(id) VALUES($1)", postID)
 	if err != nil {
 		log.Printf("Unable to insert post: %v", err)
-		return tx.Rollback() // Not sure if we want to return this error
+		return postID, tx.Rollback() // Not sure if we want to return this error
 	}
 
-	return tx.Commit()
+	return postID, tx.Commit()
 }
 
 /* Inserts the given answer into the database.

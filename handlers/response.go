@@ -5,6 +5,10 @@ import (
 	"log"
 )
 
+type IDResponse struct {
+	ID int `json:"id"`
+}
+
 type LoginResponse struct {
 	SID string `json:"session-id"`
 }
