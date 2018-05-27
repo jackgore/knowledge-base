@@ -214,8 +214,8 @@ func (d *driver) InsertUser(user user.User) error {
  */
 func (d *driver) GetUserByUsername(username string) (user.User, error) {
 	user := user.User{}
-	err := d.db.QueryRow("SELECT first_name, last_name, joined_on, password FROM users WHERE username=$1",
-		username).Scan(&user.FirstName, &user.LastName, &user.JoinedOn, &user.Password)
+	err := d.db.QueryRow("SELECT id, first_name, last_name, joined_on, password FROM users WHERE username=$1",
+		username).Scan(&user.ID, &user.FirstName, &user.LastName, &user.JoinedOn, &user.Password)
 	if err != nil {
 		log.Printf("User with username %v not found: %v", username, err)
 		return user, err

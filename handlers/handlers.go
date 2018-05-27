@@ -413,7 +413,8 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
  * Receives a question to insert, validates it and puts it into the
  * database
  *
- * Expected: { author: <int>, title: <string>, content: <string> }
+ * Expected: { title: <string>, content: <string> }
+ * Author will be inferred from the session attached to the request
  */
 func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
@@ -432,7 +433,17 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.GetUser(q.Author)
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		log.Printf("You must be logged in to create a question")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(JSON(ErrorResponse{"You must be logged in to create a question", http.StatusUnauthorized}))
+		return
+	}
+
+	log.Printf("Session retrieved: %+v", sess)
+
+	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		// The case where we receive a question authroed by an invalid user
 		log.Printf("Received question authored by a user that doesn't exist.")
@@ -440,6 +451,10 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		w.Write(JSON(ErrorResponse{"invalid author", http.StatusBadRequest}))
 		return
 	}
+
+	q.Author = u.ID
+
+	log.Printf("Question to insert: %+v", q)
 
 	err = h.db.InsertQuestion(q)
 	if err != nil {
