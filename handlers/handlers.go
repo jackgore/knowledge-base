@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -24,11 +25,14 @@ import (
 const (
 	JSONParseError          = "Unable to parse request body as JSON"
 	JSONError               = "Unable to convert into JSON"
+	CreateResourceError     = "Unable to create resource"
+	ResourceNotFoundError   = "Unable to find resource"
 	DBInsertError           = "Unable to insert into databse"
 	DBUpdateError           = "Unable to update databse"
-	DBGetError              = "Unable to retrieve from databse"
+	DBGetError              = "Unable to retrieve data from database"
 	InvalidPathParamError   = "Received bad bath paramater"
 	InvalidCredentialsError = "Invalid username or password"
+	InternalServerError     = "Internal server error"
 	LoginFailedError        = "Login failed"
 	LogoutFailedError       = "Logout failed"
 	EmptyCredentialsError   = "Username and password both must be non-empty"
@@ -49,6 +53,13 @@ func New(d storage.Driver) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
+func handleError(w http.ResponseWriter, message string, code int) {
+	_, fn, line, _ := runtime.Caller(1)
+	log.Printf("Error at: %v:%v - %v", fn, line, message)
+	w.WriteHeader(code)
+	w.Write(JSON(ErrorResponse{message, code}))
+}
+
 /* GET /organizations
  *
  * Receives a page of organizations
@@ -57,17 +68,13 @@ func New(d storage.Driver) (*Handler, error) {
 func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := h.db.GetOrganizations()
 	if err != nil {
-		log.Printf("Unable to get questions from database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	contents, err := json.Marshal(orgs)
 	if err != nil {
-		log.Printf("Unable to convert questions to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		handleError(w, JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -87,17 +94,13 @@ func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	// TODO: Add existance check
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		log.Printf("Unable to get organization: %v", err)
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusNotFound}))
+		handleError(w, DBGetError, http.StatusNotFound)
 		return
 	}
 
 	contents, err := json.Marshal(org)
 	if err != nil {
-		log.Printf("Unable to convert organization to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		handleError(w, JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -116,37 +119,27 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	org := organization.Organization{}
 	err := utils.UnmarshalRequestBody(r, &org)
 	if err != nil {
-		log.Printf("Unable to parse body as JSON: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		handleError(w, JSONParseError, http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Recieved the following organization to create: %+v", org)
-
 	err = organization.Validate(org)
 	if err != nil {
-		log.Printf("Unable to create organization: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to create organization: %v", err),
-			http.StatusBadRequest}))
+		handleError(w, CreateResourceError, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetOrganizationByName(org.Name)
 	if err == nil {
-		log.Printf("Attempted to create organization %v but name already exists", org.Name)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Attempted to create organization: %v - but name already exists", org.Name),
-			http.StatusBadRequest}))
+		msg := fmt.Sprintf("Attempted to create organization %v but name already exists", org.Name)
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	err = h.db.InsertOrganization(org)
 	if err != nil {
 		log.Printf("Unable to insert organization into database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		handleError(w, DBInsertError, http.StatusBadRequest)
 		return
 	}
 
@@ -163,26 +156,19 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		log.Printf("Unable to get teams, organization %v does not exist", orgName)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to get teams, organization %v does not exist", orgName),
-			http.StatusBadRequest}))
+		handleError(w, ResourceNotFoundError, http.StatusBadRequest)
 		return
 	}
 
 	teams, err := h.db.GetTeams(orgName)
 	if err != nil {
-		log.Printf("Unable to get teams from database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	contents, err := json.Marshal(teams)
 	if err != nil {
-		log.Printf("Unable to convert teams to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		handleError(w, JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -203,49 +189,38 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	t := team.Team{}
 	err := utils.UnmarshalRequestBody(r, &t)
 	if err != nil {
-		log.Printf("Unable to parse body as JSON: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		handleError(w, JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	err = team.Validate(t)
 	if err != nil {
-		log.Printf("Unable to create team: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Unable to create team: %v", err),
-			http.StatusBadRequest}))
+		handleError(w, CreateResourceError, http.StatusBadRequest)
 		return
 	}
 
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Organization: %v does not exist", orgName),
-			http.StatusBadRequest}))
+		handleError(w, ResourceNotFoundError, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetTeamByName(orgName, t.Name)
 	if err == nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Team with name %v within %v already exists", t.Name, orgName),
-			http.StatusBadRequest}))
+		msg := fmt.Sprintf("Team with name %v within %v already exists", t.Name, orgName)
+		handleError(w, msg, http.StatusBadRequest)
 		return
-
 	}
 
 	t.Organization = org.ID // Link the team to the org
 
 	err = h.db.InsertTeam(t)
 	if err != nil {
-		log.Printf("Unable to insert team into database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK) // TODO: Simple response body instead of just code
 }
 
 /* POST /users
@@ -258,28 +233,21 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user := user.User{}
 	err := utils.UnmarshalRequestBody(r, &user)
 	if err != nil {
-		log.Printf("Unable to parse body as JSON: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		handleError(w, JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Received the following user to signup: %v", user.SafePrint())
 
-	// verify username and password meet out criteria of valid
 	if err = creds.ValidateSignupCredentials(user.Username, user.Password); err != nil {
-		log.Printf("Attempted to sign up user %v with invalid credentials - %v", user.Username, err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusBadRequest}))
+		handleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetUserByUsername(user.Username)
 	if err == nil {
-		log.Printf("Attempted to sign up user %v but username already exists", user.Username)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{fmt.Sprintf("Attempted to sign up with username: %v - but username already exists", user.Username),
-			http.StatusBadRequest}))
+		msg := fmt.Sprintf("User with username %v already exists", user.Username)
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -287,20 +255,17 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user.Password, err = creds.HashPassword(user.Password)
 	if err != nil {
 		log.Printf("Error hashing user password: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{"Internal server error", http.StatusBadRequest}))
+		handleError(w, InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
 	err = h.db.InsertUser(user)
 	if err != nil {
-		log.Printf("Unable to insert user into database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK) // TODO this should be a JSON response
 }
 
 /* POST /login
@@ -316,16 +281,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	attemptedUser := user.LoginAttempt{}
 	err := utils.UnmarshalRequestBody(r, &attemptedUser)
 	if err != nil {
-		log.Printf("Unable to parse body as JSON: %v", err)
-		http.Error(w, JSONString(ErrorResponse{JSONParseError, http.StatusInternalServerError}), http.StatusInternalServerError)
+		handleError(w, JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Received the following user to login: %v", attemptedUser.Username)
 
 	if attemptedUser.Username == "" || attemptedUser.Password == "" {
-		log.Printf("Received empty credentials when performing a login")
-		http.Error(w, JSONString(ErrorResponse{EmptyCredentialsError, http.StatusBadRequest}), http.StatusBadRequest)
+		handleError(w, EmptyCredentialsError, http.StatusBadRequest)
 		return
 	}
 
@@ -337,25 +300,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	actualUser, err := h.db.GetUserByUsername(attemptedUser.Username)
 	if err != nil {
-		log.Printf("Unable to retrieve user %v from db: %v", attemptedUser.Username, err)
-		// If the user does not exist return 401 (Unauthorized) for security reasons
-		http.Error(w, JSONString(ErrorResponse{InvalidCredentialsError, http.StatusUnauthorized}), http.StatusUnauthorized)
+		handleError(w, InvalidCredentialsError, http.StatusUnauthorized)
 		return
 	}
 
 	// NOTE: attemptedUser.Password is plaintext and actualUser.Password is bcrypted hash of password
 	valid := creds.CheckPasswordHash(attemptedUser.Password, actualUser.Password)
 	if !valid {
-		log.Printf("Bad credentials attempting to authenticate user %v", attemptedUser.Username)
-		http.Error(w, JSONString(ErrorResponse{InvalidCredentialsError, http.StatusUnauthorized}), http.StatusUnauthorized)
+		handleError(w, InvalidCredentialsError, http.StatusUnauthorized)
 		return
 	}
 
 	// Successfully logged in make sure we have a session -- will insert a session id into the ResponseWriters cookies
 	s, err := h.sessionManager.SessionStart(w, r, actualUser.Username)
 	if err != nil {
-		log.Printf("Unable to start session for user, login failed")
-		http.Error(w, JSONString(ErrorResponse{LoginFailedError, http.StatusInternalServerError}), http.StatusInternalServerError)
+		handleError(w, LoginFailedError, http.StatusInternalServerError)
 		return
 	}
 
@@ -369,8 +328,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := h.sessionManager.SessionDestroy(w, r)
 	if err != nil {
-		log.Printf("Unable to logout user: %v", err)
-		http.Error(w, JSONString(ErrorResponse{LogoutFailedError, http.StatusInternalServerError}), http.StatusInternalServerError)
+		handleError(w, LogoutFailedError, http.StatusInternalServerError)
 		return
 	}
 
@@ -388,24 +346,14 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
-		log.Printf("Unable to get user from database: %v", err)
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusNotFound}))
+		handleError(w, DBGetError, http.StatusNotFound)
 		return
 	}
 
 	// Now that we have the user set password field to ""
 	user.Password = ""
 
-	contents, err := json.Marshal(user)
-	if err != nil {
-		log.Printf("Unable to convert user to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
-		return
-	}
-
-	w.Write(contents)
+	w.Write(JSON(user))
 	return
 }
 
@@ -421,33 +369,27 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
 	err := utils.UnmarshalRequestBody(r, &q)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusInternalServerError}))
+		handleError(w, JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	err = question.Validate(q)
 	if err != nil {
-		log.Printf("Received invalid question: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{err.Error(), http.StatusBadRequest}))
+		handleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
-		log.Printf("You must be logged in to create a question")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(JSON(ErrorResponse{"You must be logged in to create a question", http.StatusUnauthorized}))
+		msg := "Must be logged in to create a question"
+		handleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
-		// The case where we receive a question authored by an invalid user
-		log.Printf("Received question authored by a user that doesn't exist.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid author", http.StatusBadRequest}))
+		msg := "Received question authored by a user that doesn't exist."
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -455,9 +397,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.db.InsertQuestion(q)
 	if err != nil {
-		log.Printf("Unable to insert question into database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -473,29 +413,17 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Printf("Received bad question id when trying to retrieve question", idStr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{BadIDError, http.StatusBadRequest}))
+		handleError(w, BadIDError, http.StatusBadRequest)
 		return
 	}
 
-	questions, err := h.db.GetQuestion(id)
+	question, err := h.db.GetQuestion(id)
 	if err != nil {
-		log.Printf("Unable to get question from database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
-	contents, err := json.Marshal(questions)
-	if err != nil {
-		log.Printf("Unable to convert question to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
-		return
-	}
-
-	w.Write(contents)
+	w.Write(JSON(question))
 }
 
 /* GET /questions
@@ -506,21 +434,11 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	questions, err := h.db.GetQuestions()
 	if err != nil {
-		log.Printf("Unable to get questions from database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBGetError, http.StatusInternalServerError}))
+		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
-	contents, err := json.Marshal(questions)
-	if err != nil {
-		log.Printf("Unable to convert questions to byte array")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
-		return
-	}
-
-	w.Write(contents)
+	w.Write(JSON(questions))
 	return
 }
 
@@ -534,21 +452,18 @@ func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Printf("Received bad question id when trying to increase view count", idStr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{BadIDError, http.StatusBadRequest}))
+		handleError(w, BadIDError, http.StatusBadRequest)
 		return
 	}
 
 	err = h.db.ViewQuestion(id)
 	if err != nil {
 		log.Printf("Unable to update view count for question with id: %v. Error: %v", id, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBUpdateError, http.StatusInternalServerError}))
+		handleError(w, DBUpdateError, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK) // TODO: include JSON body
 }
 
 /* POST /questions/{id}/answers
@@ -562,10 +477,10 @@ func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
  */
 func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
+
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid question id", http.StatusBadRequest}))
+		handleError(w, BadIDError, http.StatusBadRequest)
 		return
 	}
 
@@ -573,7 +488,7 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	err = utils.UnmarshalRequestBody(r, &ans)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{JSONParseError, http.StatusBadRequest}))
+		handleError(w, JSONParseError, http.StatusBadRequest)
 		return
 	}
 
@@ -582,25 +497,22 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 	err = answer.Validate(ans)
 	if err != nil {
-		log.Printf("Received invalid answer: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{err.Error(), http.StatusBadRequest}))
+		msg := fmt.Sprintf("Invalid answer: %v", err)
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
-		log.Printf("You must be logged in to answer a question")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(JSON(ErrorResponse{"You must be logged in to answer a question", http.StatusUnauthorized}))
+		msg := fmt.Sprintf("You must be logged in to answer a question")
+		handleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
-		log.Printf("Received answer authored by a user that doesn't exist.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid author", http.StatusBadRequest}))
+		msg := fmt.Sprintf("Received answer authored by a user that doesn't exist.")
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -609,21 +521,18 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	// Ensure the question with the given id actually exists
 	_, err = h.db.GetQuestion(id)
 	if err != nil {
-		log.Printf("Received answer to a question that doesn't exist.")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid question", http.StatusBadRequest}))
+		msg := fmt.Sprintf("Received answer to a question that doesn't exist.")
+		handleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	err = h.db.InsertAnswer(ans)
 	if err != nil {
-		log.Printf("Unable to insert answer into database: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{DBInsertError, http.StatusInternalServerError}))
+		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK) // TODO Success JSON response body
 }
 
 /* GET /questions/{id}/answers
@@ -632,28 +541,19 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
  */
 func (h *Handler) GetAnswers(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
+
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid question id", http.StatusBadRequest}))
+		handleError(w, BadIDError, http.StatusBadRequest)
 		return
 	}
 
 	ans, err := h.db.GetAnswers(id)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(JSON(ErrorResponse{"invalid question", http.StatusBadRequest}))
+		handleError(w, ResourceNotFoundError, http.StatusNotFound)
 		return
 	}
 
-	contents, err := json.Marshal(ans)
-	if err != nil {
-		log.Printf("Unable to convert answers to json")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
-		return
-	}
-
-	w.Write(contents)
+	w.Write(JSON(ans))
 	return
 }
