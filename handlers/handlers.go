@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/models/answer"
@@ -443,7 +444,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
-		// The case where we receive a question authroed by an invalid user
+		// The case where we receive a question authored by an invalid user
 		log.Printf("Received question authored by a user that doesn't exist.")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(JSON(ErrorResponse{"invalid author", http.StatusBadRequest}))
@@ -550,7 +551,11 @@ func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-/* POST /questions/{id}
+/* POST /questions/{id}/answers
+ *
+ * Expected: { "content":<string> }
+ *
+ *	All other values will be inferred from context/path paramater
  *
  * Receives an answer to the question with id
  * and submits it as an answer
@@ -572,6 +577,9 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ans.Question = id
+	ans.SubmittedOn = time.Now()
+
 	err = answer.Validate(ans)
 	if err != nil {
 		log.Printf("Received invalid answer: %v", err)
@@ -580,15 +588,23 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure the answer is authored by a valid user
-	// TODO: This should be its own function
-	_, err = h.db.GetUser(ans.AuthoredBy)
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		log.Printf("You must be logged in to answer a question")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(JSON(ErrorResponse{"You must be logged in to answer a question", http.StatusUnauthorized}))
+		return
+	}
+
+	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		log.Printf("Received answer authored by a user that doesn't exist.")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(JSON(ErrorResponse{"invalid author", http.StatusBadRequest}))
 		return
 	}
+
+	ans.Author = u.ID
 
 	// Ensure the question with the given id actually exists
 	_, err = h.db.GetQuestion(id)

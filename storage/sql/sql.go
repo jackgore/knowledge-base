@@ -332,18 +332,20 @@ func (d *driver) InsertAnswer(answer answer.Answer) error {
 	}
 
 	var followID int
-	err = tx.QueryRow("INSERT INTO followup(submitted_on, content, author) VALUES($1,$2,$3,$4) returning id;",
-		answer.SubmittedOn, answer.Content, answer.AuthoredBy).Scan(&followID)
+	err = tx.QueryRow("INSERT INTO followup(submitted_on, content, author) VALUES($1,$2,$3) returning id;",
+		answer.SubmittedOn, answer.Content, answer.Author).Scan(&followID)
 	if err != nil {
 		log.Printf("Unable to insert answer: %v", err)
-		return tx.Rollback() // Not sure if we want to return this error
+		tx.Rollback() // Not sure if we want to return this error
+		return err
 	}
 
 	_, err = tx.Exec("INSERT INTO answer(id, question, accepted) VALUES($1,$2,$3)",
 		followID, answer.Question, answer.Accepted)
 	if err != nil {
 		log.Printf("Unable to insert answer: %v", err)
-		return tx.Rollback() // Not sure if we want to return this error
+		tx.Rollback() // Not sure if we want to return this error
+		return err
 	}
 
 	return tx.Commit()

@@ -11,8 +11,9 @@ const (
 )
 
 type Answer struct {
+	ID          int       `json:"id"`
 	SubmittedOn time.Time `json:"submitted-on"`
-	AuthoredBy  int       `json:"authored-by"`
+	Author      int       `json:"author"`
 	Content     string    `json:"content"`
 	Accepted    bool      `json:"accepted"`
 	Question    int       `json:"question"`
