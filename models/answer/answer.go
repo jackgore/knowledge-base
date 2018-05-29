@@ -14,6 +14,7 @@ type Answer struct {
 	ID          int       `json:"id"`
 	SubmittedOn time.Time `json:"submitted-on"`
 	Author      int       `json:"author"`
+	Username    string    `json:"username"`
 	Content     string    `json:"content"`
 	Accepted    bool      `json:"accepted"`
 	Question    int       `json:"question"`

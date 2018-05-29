@@ -321,6 +321,31 @@ func (d *driver) InsertQuestion(question question.Question) (int, error) {
 	return postID, tx.Commit()
 }
 
+/* Gets a page of answers from the database
+ */
+func (d *driver) GetAnswers(qid int) ([]answer.Answer, error) {
+	rows, err := d.db.Query(
+		"SELECT answer.id, question, accepted, content, submitted_on, author, username"+
+			" FROM (answer NATURAL JOIN followup) JOIN users ON (users.id = author) WHERE question=$1;", qid)
+	if err != nil {
+		log.Printf("Unable to receive answers from the db: %v", err)
+		return nil, err
+	}
+
+	answers := make([]answer.Answer, 0)
+	for rows.Next() {
+		ans := answer.Answer{}
+		err := rows.Scan(&ans.ID, &ans.Question, &ans.Accepted, &ans.Content, &ans.SubmittedOn, &ans.Author, &ans.Username)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		answers = append(answers, ans)
+	}
+
+	return answers, err
+}
+
 /* Inserts the given answer into the database.
  * This is an all or nothing insertion.
  */

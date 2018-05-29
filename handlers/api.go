@@ -5,6 +5,7 @@ import (
 )
 
 type API interface {
+	GetAnswers(w http.ResponseWriter, r *http.Request)
 	SubmitAnswer(w http.ResponseWriter, r *http.Request)
 	SubmitQuestion(w http.ResponseWriter, r *http.Request)
 	ViewQuestion(w http.ResponseWriter, r *http.Request)

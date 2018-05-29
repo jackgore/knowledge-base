@@ -625,3 +625,35 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+/* GET /questions/{id}/answers
+ *
+ * Retrieves answers to the question with id
+ */
+func (h *Handler) GetAnswers(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{"invalid question id", http.StatusBadRequest}))
+		return
+	}
+
+	ans, err := h.db.GetAnswers(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(JSON(ErrorResponse{"invalid question", http.StatusBadRequest}))
+		return
+	}
+
+	contents, err := json.Marshal(ans)
+	if err != nil {
+		log.Printf("Unable to convert answers to json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(JSON(ErrorResponse{JSONError, http.StatusInternalServerError}))
+		return
+	}
+
+	w.Write(contents)
+	return
+}

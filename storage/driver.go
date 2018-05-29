@@ -11,6 +11,7 @@ import (
 
 type Driver interface {
 	InsertAnswer(answer answer.Answer) error
+	GetAnswers(qid int) ([]answer.Answer, error)
 
 	// TODO: GetQuestion should return an additional boolean to indicate existance
 	GetQuestion(id int) (question.Question, error)

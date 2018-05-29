@@ -19,6 +19,7 @@ func New(api handlers.API) (*Server, error) {
 
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}/answers", api.SubmitAnswer).Methods(http.MethodPost)
+	s.Router.HandleFunc("/questions/{id}/answers", api.GetAnswers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}", api.GetQuestion).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
