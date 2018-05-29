@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/handlers"
-	"github.com/JonathonGore/knowledge-base/handlers/wrappers"
+	"github.com/JonathonGore/knowledge-base/server/wrappers"
 	"github.com/gorilla/mux"
 )
 
@@ -38,6 +38,7 @@ func New(api handlers.API) (*Server, error) {
 
 	// Attach middleware to mux router
 	s.Router.Use(wrappers.Log)
+	s.Router.Use(wrappers.JSONResponse) // All of our routes should return JSON
 
 	return s, nil
 }
