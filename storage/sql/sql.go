@@ -244,10 +244,10 @@ func (d *driver) GetUser(userID int) (user.User, error) {
 func (d *driver) GetQuestion(id int) (question.Question, error) {
 	question := question.Question{}
 	err := d.db.QueryRow(
-		" SELECT post.id as id, users.username, submitted_on, title, content, author"+
+		" SELECT post.id as id, users.username, submitted_on, title, content, author, views"+
 			" FROM (post NATURAL JOIN question) JOIN users ON (author = users.id)"+
 			" where post.id=$1",
-		id).Scan(&question.ID, &question.Username, &question.SubmittedOn, &question.Title, &question.Content, &question.Author)
+		id).Scan(&question.ID, &question.Username, &question.SubmittedOn, &question.Title, &question.Content, &question.Author, &question.Views)
 	if err != nil {
 		log.Printf("Unable to retrieve question with id %v: %v", id, err)
 		return question, err
