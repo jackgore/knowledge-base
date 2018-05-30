@@ -33,6 +33,14 @@ CREATE TABLE IF NOT EXISTS team_of (
 	FOREIGN KEY (team_id) REFERENCES team (id)
 );
 
+CREATE TABLE IF NOT EXISTS post_of (
+	pid INT NOT NULL,
+	tid INT NOT NULL,
+	PRIMARY KEY (pid, tid),
+	FOREIGN KEY (pid) REFERENCES post (id),
+	FOREIGN KEY (tid) REFERENCES team (id)
+);
+
 CREATE TABLE IF NOT EXISTS session (
 	sid VARCHAR(64) NOT NULL,
 	username VARCHAR(64) NOT NULL,
@@ -59,6 +67,7 @@ CREATE TABLE IF NOT EXISTS post (
 	content TEXT NOT NULL,
 	author INT NOT NULL,
 	views INT NOT NULL DEFAULT 0,
+	team VARCHAR(64) 
 	PRIMARY KEY (id),
 	FOREIGN KEY (author) REFERENCES users (id)
 );
