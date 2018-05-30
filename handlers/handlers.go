@@ -60,6 +60,97 @@ func handleError(w http.ResponseWriter, message string, code int) {
 	w.Write(JSON(ErrorResponse{message, code}))
 }
 
+func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (question.Question, error) {
+	q := question.Question{}
+	err := utils.UnmarshalRequestBody(r, &q)
+	if err != nil {
+		handleError(w, JSONParseError, http.StatusInternalServerError)
+		return q, err
+	}
+
+	err = question.Validate(q)
+	if err != nil {
+		handleError(w, err.Error(), http.StatusBadRequest)
+		return q, err
+	}
+
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		msg := "Must be logged in to create a question"
+		handleError(w, msg, http.StatusUnauthorized)
+		return q, err
+	}
+
+	u, err := h.db.GetUserByUsername(sess.Username)
+	if err != nil {
+		msg := "Received question authored by a user that doesn't exist."
+		handleError(w, msg, http.StatusBadRequest)
+		return q, err
+	}
+
+	q.Author = u.ID
+
+	return q, nil
+}
+
+/* GET /organizations/{org}/teams/{team}/questions
+ *
+ * Receives a page of questions for the provided team
+ * TODO: accept query params
+ */
+func (h *Handler) GetTeamQuestions(w http.ResponseWriter, r *http.Request) {
+	questions, err := h.db.GetQuestions()
+	if err != nil {
+		handleError(w, DBGetError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(JSON(questions))
+	return
+}
+
+/* POST /organizations/{org}/teams/{team}/questions
+ *
+ * Receives a question to insert for the given team, validates it
+ * and puts it into the database.
+ *
+ * Expected: { title: <string>, content: <string> }
+ * Author will be inferred from the session attached to the request
+ */
+func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	org := params["org"]
+	team := params["team"]
+
+	q, err := h.prepareQuestion(w, r)
+	if err != nil {
+		return // We write to w in prepareQuestion
+	}
+
+	_, err = h.db.GetOrganizationByName(org)
+	if err != nil {
+		handleError(w, fmt.Sprintf("Organization %v does not exist", org), http.StatusBadRequest)
+		return
+	}
+
+	t, err := h.db.GetTeamByName(org, team)
+	if err != nil {
+		handleError(w, fmt.Sprintf("Team %v does not exist", org), http.StatusBadRequest)
+		return
+	}
+
+	q.Team = team
+	q.Organization = org
+
+	id, err := h.db.InsertTeamQuestion(q, t)
+	if err != nil {
+		handleError(w, DBInsertError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(JSON(IDResponse{id}))
+}
+
 /* GET /organizations
  *
  * Receives a page of organizations

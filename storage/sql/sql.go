@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -313,6 +314,70 @@ func (d *driver) InsertQuestion(question question.Question) (int, error) {
 	}
 
 	_, err = tx.Exec("INSERT INTO question(id) VALUES($1)", postID)
+	if err != nil {
+		log.Printf("Unable to insert post: %v", err)
+		return postID, tx.Rollback() // Not sure if we want to return this error
+	}
+
+	return postID, tx.Commit()
+}
+
+/* Gets a page of questions from the database for the requested team and org
+ */
+func (d *driver) GetTeamQuestions() ([]question.Question, error) {
+	rows, err := d.db.Query(
+		" SELECT post.id as id, submitted_on, title, content, username, views" +
+			" FROM (post NATURAL JOIN question) JOIN users on (users.id = post.author)" +
+			" order by submitted_on")
+	if err != nil {
+		log.Printf("Unable to receive questions from the db: %v", err)
+		return nil, err
+	}
+
+	questions := make([]question.Question, 0)
+	for rows.Next() {
+		question := question.Question{}
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Username, &question.Views)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		questions = append(questions, question)
+	}
+
+	return questions, err
+}
+
+/* Inserts the given question into the database for the given team.
+ * This is an all or nothing insertion.
+ */
+func (d *driver) InsertTeamQuestion(q question.Question, teamID int) (int, error) {
+	postID := -1
+
+	if q.Team == "" || q.Organization == "" {
+		return postID, errors.New("Team and organization both must not be empty")
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		log.Printf("Unable to begin transaction: %v", err)
+		return postID, err
+	}
+
+	err = tx.QueryRow("INSERT INTO post(submitted_on, title, content, author) VALUES($1,$2,$3,$4) returning id;",
+		q.SubmittedOn, q.Title, q.Content, q.Author).Scan(&postID)
+	if err != nil {
+		log.Printf("Unable to insert post: %v", err)
+		return postID, tx.Rollback() // Not sure if we want to return this error
+	}
+
+	_, err = tx.Exec("INSERT INTO question(id) VALUES($1)", postID)
+	if err != nil {
+		log.Printf("Unable to insert post: %v", err)
+		return postID, tx.Rollback() // Not sure if we want to return this error
+	}
+
+	_, err = tx.Exec("INSERT INTO post_of(pid, tid) VALUES($1,$2)", postID, teamID)
 	if err != nil {
 		log.Printf("Unable to insert post: %v", err)
 		return postID, tx.Rollback() // Not sure if we want to return this error

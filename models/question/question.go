@@ -14,14 +14,16 @@ const (
 )
 
 type Question struct {
-	ID          int       `json:"id"`
-	SubmittedOn time.Time `json:"submitted-on"`
-	Author      int       `json:"author,omitempty"`
-	Username    string    `json:"username"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	Views       int       `json:"views"`
-	Upvotes     int       `json:"upvotes"`
+	ID           int       `json:"id"`
+	SubmittedOn  time.Time `json:"submitted-on"`
+	Author       int       `json:"author,omitempty"`
+	Username     string    `json:"username"`
+	Title        string    `json:"title"`
+	Content      string    `json:"content"`
+	Views        int       `json:"views"`
+	Upvotes      int       `json:"upvotes"`
+	Team         string    `json:"team,omitempty"`
+	Organization string    `json:"organization,omitempty"`
 }
 
 /* Validates the given question to make sure all fields all

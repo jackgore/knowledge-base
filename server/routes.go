@@ -15,14 +15,15 @@ type Server struct {
 func New(api handlers.API) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
-	// TODO: Create a second DB connection here for passing to wrappers
-
+	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}/answers", api.SubmitAnswer).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}/answers", api.GetAnswers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}", api.GetQuestion).Methods(http.MethodGet)
-	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.GetTeamQuestions).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.SubmitTeamQuestion).Methods(http.MethodPost)
 
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
