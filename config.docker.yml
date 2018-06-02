@@ -5,7 +5,7 @@ ssl:
     certificate: 'server.crt'
     key: 'server.key'
 database:
-    host: '0.0.0.0'
+    host: 'postgresql'
     name: 'kbase'
     user: 'kbase'
     password: 'password'

@@ -43,7 +43,7 @@ func getSQLConfig(conf config.Config) sql.Config {
 		DatabaseName: conf.GetString("database.name"),
 		Username:     conf.GetString("database.user"),
 		Password:     conf.GetString("database.password"),
-		Host:         "0.0.0.0",
+		Host:         conf.GetString("database.host"),
 	})
 }
 
