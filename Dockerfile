@@ -1,4 +1,4 @@
-FROM golang:1.9
+FROM golang:1.10
 
 RUN go get -u github.com/golang/dep/cmd/dep && go install github.com/golang/dep/cmd/dep
 
@@ -7,4 +7,4 @@ COPY . /go/src/github.com/JonathonGore/knowledge-base
 
 RUN dep ensure -v && go install -v
 
-ENTRYPOINT ["go-service"]
+ENTRYPOINT ["knowledge-base", "-config=config.docker.yml"]

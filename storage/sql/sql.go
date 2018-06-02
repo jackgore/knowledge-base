@@ -391,7 +391,7 @@ func New(config Config) (*driver, error) {
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v")
+		log.Fatalf("Unable to connect to database: %v", err)
 	}
 
 	log.Printf("Successfully connected to database")

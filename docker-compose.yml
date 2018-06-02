@@ -1,23 +1,37 @@
-PostgreSQL:
-  restart: always
-  image: sameersbn/postgresql:9.6-2
-  ports:
-    - "5432:5432"
-  environment:
-    - DEBUG=false
+version: "3"
+services:
+  postgresql:
+    restart: always
+    image: sameersbn/postgresql:9.6-2
+    ports:
+      - "5432:5432"
+    environment:
+      - DEBUG=false
 
-    - DB_USER=kbase
-    - DB_PASS=password
-    - DB_NAME=kbase,test
-    - DB_TEMPLATE=
+      - DB_USER=kbase
+      - DB_PASS=password
+      - DB_NAME=kbase,test
+      - DB_TEMPLATE=
 
-    - DB_EXTENSION=
+      - DB_EXTENSION=
 
-    - REPLICATION_MODE=
-    - REPLICATION_USER=
-    - REPLICATION_PASS=
-    - REPLICATION_SSLMODE=
-  volumes:
-    - /usr/local/postgresql:/var/lib/postgresql
-    - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./data/init.sql:/docker-entrypoint-initdb.d/test/test.sql
+      - REPLICATION_MODE=
+      - REPLICATION_USER=
+      - REPLICATION_PASS=
+      - REPLICATION_SSLMODE=
+    volumes:
+      - /usr/local/postgresql:/var/lib/postgresql
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/init.sql:/docker-entrypoint-initdb.d/test/test.sql
+  kbaseui:
+    restart: always
+    image: jackgore/knowledge-base-ui:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - SERVER_URL=http://kbase:3001
+  kbase:
+    restart: always
+    image: jackgore/knowledge-base:latest
+    ports:
+      - "3001:3001"
