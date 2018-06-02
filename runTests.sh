@@ -16,7 +16,7 @@ echo 'Creating tables in DB...'
 cat data/clearTables.sql data/init.sql | PGPASSWORD=password psql -U kbase -d test -h ${KB_HOST} -f - > /dev/null 2>&1
 
 # Run our server
-echo 'Runnig knowlege base server'
+echo 'Running knowledge-base server'
 knowledge-base -config=${CONFIG_FILE} > test_logs.txt 2>&1 &
 
 PROJ_PID=$!

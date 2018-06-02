@@ -5,6 +5,7 @@ ssl:
     certificate: 'server.crt'
     key: 'server.key'
 database:
+    host: '0.0.0.0'
     name: 'test'
     user: 'kbase'
     password: 'password'

@@ -67,7 +67,6 @@ CREATE TABLE IF NOT EXISTS post (
 	content TEXT NOT NULL,
 	author INT NOT NULL,
 	views INT NOT NULL DEFAULT 0,
-	team VARCHAR(64) 
 	PRIMARY KEY (id),
 	FOREIGN KEY (author) REFERENCES users (id)
 );
