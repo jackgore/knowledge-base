@@ -23,3 +23,6 @@ knowledge-base
 *.db
 
 test_logs.txt
+
+# Session Data
+.session

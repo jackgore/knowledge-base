@@ -324,11 +324,12 @@ func (d *driver) InsertQuestion(question question.Question) (int, error) {
 
 /* Gets a page of questions from the database for the requested team and org
  */
-func (d *driver) GetTeamQuestions() ([]question.Question, error) {
+func (d *driver) GetTeamQuestions(team, org string) ([]question.Question, error) {
 	rows, err := d.db.Query(
-		" SELECT post.id as id, submitted_on, title, content, username, views" +
-			" FROM (post NATURAL JOIN question) JOIN users on (users.id = post.author)" +
-			" order by submitted_on")
+		" SELECT post.id as id, submitted_on, title, content, username, views"+
+			" FROM ((question NATURAL JOIN post) JOIN users ON (post.author = users.id))"+
+			" JOIN post_of ON (post_of.pid = question.id) WHERE"+
+			" post_of.tid = (SELECT distinct team.id FROM team, organization WHERE team.name = $1 AND organization.name = $2)", team, org)
 	if err != nil {
 		log.Printf("Unable to receive questions from the db: %v", err)
 		return nil, err
@@ -340,7 +341,7 @@ func (d *driver) GetTeamQuestions() ([]question.Question, error) {
 		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Username, &question.Views)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
-			continue
+			return questions, err
 		}
 		questions = append(questions, question)
 	}

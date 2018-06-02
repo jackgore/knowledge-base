@@ -99,7 +99,11 @@ func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (quest
  * TODO: accept query params
  */
 func (h *Handler) GetTeamQuestions(w http.ResponseWriter, r *http.Request) {
-	questions, err := h.db.GetQuestions()
+	params := mux.Vars(r)
+	team := params["team"]
+	org := params["org"]
+
+	questions, err := h.db.GetTeamQuestions(team, org)
 	if err != nil {
 		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
@@ -142,7 +146,7 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 	q.Team = team
 	q.Organization = org
 
-	id, err := h.db.InsertTeamQuestion(q, t)
+	id, err := h.db.InsertTeamQuestion(q, t.ID)
 	if err != nil {
 		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return

@@ -12,4 +12,4 @@ while [ "$#" -gt 0 ]; do
 done
 
 KB_HOST=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | cut -d\  -f2)
-psql -U kbase -d ${DB} -h ${KB_HOST}
+PGPASSWORD=password psql -U kbase -d ${DB} -h ${KB_HOST}
