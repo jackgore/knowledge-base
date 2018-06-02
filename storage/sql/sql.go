@@ -245,10 +245,12 @@ func (d *driver) GetUser(userID int) (user.User, error) {
 func (d *driver) GetQuestion(id int) (question.Question, error) {
 	question := question.Question{}
 	err := d.db.QueryRow(
-		" SELECT post.id as id, users.username, submitted_on, title, content, author, views"+
+		" SELECT post.id as id, users.username, submitted_on, title, content, author, views,"+
+			" (SELECT count(*) from answer where post.id=answer.question) as answers"+
 			" FROM (post NATURAL JOIN question) JOIN users ON (author = users.id)"+
 			" where post.id=$1",
-		id).Scan(&question.ID, &question.Username, &question.SubmittedOn, &question.Title, &question.Content, &question.Author, &question.Views)
+		id).Scan(&question.ID, &question.Username, &question.SubmittedOn, &question.Title,
+		&question.Content, &question.Author, &question.Views, &question.Answers)
 	if err != nil {
 		log.Printf("Unable to retrieve question with id %v: %v", id, err)
 		return question, err
@@ -273,7 +275,8 @@ func (d *driver) ViewQuestion(id int) error {
  */
 func (d *driver) GetQuestions() ([]question.Question, error) {
 	rows, err := d.db.Query(
-		" SELECT post.id as id, submitted_on, title, content, username, views" +
+		" SELECT post.id as id, submitted_on, title, content, username, views," +
+			" (SELECT count(*) from answer where post.id=answer.question) as answers" +
 			" FROM (post NATURAL JOIN question) JOIN users on (users.id = post.author)" +
 			" order by submitted_on")
 	if err != nil {
@@ -284,7 +287,8 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 	questions := make([]question.Question, 0)
 	for rows.Next() {
 		question := question.Question{}
-		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Username, &question.Views)
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title,
+			&question.Content, &question.Username, &question.Views, &question.Answers)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			continue
@@ -326,7 +330,8 @@ func (d *driver) InsertQuestion(question question.Question) (int, error) {
  */
 func (d *driver) GetTeamQuestions(team, org string) ([]question.Question, error) {
 	rows, err := d.db.Query(
-		" SELECT post.id as id, submitted_on, title, content, username, views"+
+		" SELECT post.id as id, submitted_on, title, content, username, views,"+
+			" (SELECT count(*) from answer where post.id=answer.question) as answers"+
 			" FROM ((question NATURAL JOIN post) JOIN users ON (post.author = users.id))"+
 			" JOIN post_of ON (post_of.pid = question.id) WHERE"+
 			" post_of.tid = (SELECT distinct team.id FROM team, organization WHERE team.name = $1 AND organization.name = $2)", team, org)
@@ -338,7 +343,8 @@ func (d *driver) GetTeamQuestions(team, org string) ([]question.Question, error)
 	questions := make([]question.Question, 0)
 	for rows.Next() {
 		question := question.Question{}
-		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content, &question.Username, &question.Views)
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content,
+			&question.Username, &question.Views, &question.Answers)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			return questions, err

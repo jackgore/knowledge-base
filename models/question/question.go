@@ -20,6 +20,7 @@ type Question struct {
 	Username     string    `json:"username"`
 	Title        string    `json:"title"`
 	Content      string    `json:"content"`
+	Answers      int       `json:"answers"`
 	Views        int       `json:"views"`
 	Upvotes      int       `json:"upvotes"`
 	Team         string    `json:"team,omitempty"`
