@@ -13,6 +13,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/handlers"
 	_ "github.com/JonathonGore/knowledge-base/logging"
 	"github.com/JonathonGore/knowledge-base/server"
+	"github.com/JonathonGore/knowledge-base/session/managers"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
@@ -62,15 +63,20 @@ func main() {
 
 	d, err = sql.New(getSQLConfig(conf))
 	if err != nil {
-		log.Fatalf("unable to create sql driver")
+		log.Fatalf("unable to create sql driver: %v", err)
 	}
 
-	api, err = handlers.New(d)
+	sm, err := managers.NewSMManager("knowledge_base", 3600*24*365, d)
+	if err != nil {
+		log.Fatalf("unable to create session manager: %v", err)
+	}
+
+	api, err = handlers.New(d, sm)
 	if err != nil {
 		log.Fatalf("unable to create handler: %v", err)
 	}
 
-	s, err := server.New(api)
+	s, err := server.New(api, sm)
 	if err != nil {
 		log.Fatalf("error initializing server: %v", err)
 	}

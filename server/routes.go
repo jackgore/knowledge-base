@@ -5,6 +5,7 @@ import (
 
 	"github.com/JonathonGore/knowledge-base/handlers"
 	"github.com/JonathonGore/knowledge-base/server/wrappers"
+	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/gorilla/mux"
 )
 
@@ -12,8 +13,11 @@ type Server struct {
 	Router *mux.Router
 }
 
-func New(api handlers.API) (*Server, error) {
+func New(api handlers.API, sm session.Manager) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
+
+	l := wrappers.LoggedInMiddleware{}
+	l.Initialize(sm)
 
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
@@ -32,7 +36,7 @@ func New(api handlers.API) (*Server, error) {
 
 	s.Router.HandleFunc("/organizations", api.GetOrganizations).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{organization}", api.GetOrganization).Methods(http.MethodGet)
-	s.Router.HandleFunc("/organizations", api.CreateOrganization).Methods(http.MethodPost)
+	s.Router.HandleFunc("/organizations", l.LoggedIn(api.CreateOrganization)).Methods(http.MethodPost)
 
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.CreateTeam).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.GetTeams).Methods(http.MethodGet)

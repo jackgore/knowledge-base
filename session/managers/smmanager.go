@@ -83,6 +83,9 @@ func (m *SMManager) GetSession(r *http.Request) (session.Session, error) {
 		return s, errors.New("unable to get session, likely invalid session id")
 	}
 
+	// Now that we have the session from the db store it in our session map
+	m.sessionMap.Store(sid, s)
+
 	return s, nil
 }
 

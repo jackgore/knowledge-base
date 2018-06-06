@@ -16,7 +16,6 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/team"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/session"
-	"github.com/JonathonGore/knowledge-base/session/managers"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/utils"
 	"github.com/gorilla/mux"
@@ -44,12 +43,7 @@ type Handler struct {
 	sessionManager session.Manager
 }
 
-func New(d storage.Driver) (*Handler, error) {
-	sm, err := managers.NewSMManager("knowledge_base", 3600*24*365, d)
-	if err != nil {
-		return nil, err
-	}
-
+func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
