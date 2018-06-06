@@ -231,6 +231,8 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	org.CreatedOn = time.Now()
+
 	err = h.db.InsertOrganization(org)
 	if err != nil {
 		log.Printf("Unable to insert organization into database: %v", err)
