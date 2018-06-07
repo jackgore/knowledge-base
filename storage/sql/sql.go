@@ -79,7 +79,6 @@ func (d *driver) GetOrganizationByName(name string) (organization.Organization, 
 	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM organization WHERE name=$1",
 		name).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
 	if err != nil {
-		log.Printf("Unable to retrieve org with name %v: %v", name, err)
 		return org, err
 	}
 
@@ -131,7 +130,7 @@ func (d *driver) InsertOrgMember(username, org string, isAdmin bool) error {
 		return err
 	}
 
-	_, err = tx.Exec("INSERT INTO member_of(user_id, org_id, admin) VALUES($1, $2)", u.ID, o.ID, isAdmin)
+	_, err = tx.Exec("INSERT INTO member_of(user_id, org_id, admin) VALUES($1, $2, $3)", u.ID, o.ID, isAdmin)
 	if err != nil {
 		tx.Rollback()
 		log.Printf("Unable to insert member into org: %v", err)

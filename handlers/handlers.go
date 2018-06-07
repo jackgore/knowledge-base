@@ -234,6 +234,20 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		msg := "Must be logged in to create a question"
+		handleError(w, msg, http.StatusUnauthorized)
+		return
+	}
+
+	err = h.db.InsertOrgMember(sess.Username, org.Name, true)
+	if err != nil {
+		log.Printf("unable to insert user as member: %v", err)
+		handleError(w, DBInsertError, http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
