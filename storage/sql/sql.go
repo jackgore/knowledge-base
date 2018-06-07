@@ -88,9 +88,9 @@ func (d *driver) GetOrganizationByName(name string) (organization.Organization, 
 /* Gets a page of organizations from the database
  */
 func (d *driver) GetOrganizations() ([]organization.Organization, error) {
-	rows, err := d.db.Query("SELECT id, name, created_on, is_public" +
-		" FROM organization" +
-		" order by name")
+	rows, err := d.db.Query("SELECT id, name, created_on, is_public," +
+		" (SELECT count(*) FROM member_of WHERE id=org_id)" +
+		" FROM organization order by name")
 	if err != nil {
 		log.Printf("Unable to receive organizations from the db: %v", err)
 		return nil, err
@@ -99,7 +99,7 @@ func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	orgs := make([]organization.Organization, 0)
 	for rows.Next() {
 		org := organization.Organization{}
-		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic, &org.MemberCount)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			continue

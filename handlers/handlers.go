@@ -168,8 +168,6 @@ func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(contents)
-	return
-
 }
 
 /* GET /organization/{organization}
