@@ -2,6 +2,7 @@ package organization
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -44,6 +45,10 @@ func validateName(name string) error {
 		return fmt.Errorf("Length of org name must be less than %v. Has length of %v.", maxNameLength, len(name))
 	} else if len(name) < minNameLength {
 		return fmt.Errorf("Length of org namemust be at least %v. Has length of %v.", minNameLength, len(name))
+	}
+
+	if strings.Contains(name, " ") {
+		return fmt.Errorf("Org names cannot contain spaces")
 	}
 
 	return nil
