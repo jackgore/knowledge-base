@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS team (
 CREATE TABLE IF NOT EXISTS member_of_team (
 	user_id INT NOT NULL,
 	team_id INT NOT NULL,
+	admin BOOLEAN NOT NULL DEFAULT false,
 	PRIMARY KEY (user_id, team_id),
 	FOREIGN KEY (user_id) REFERENCES users (id),
 	FOREIGN KEY (team_id) REFERENCES team (id)
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS member_of_team (
 CREATE TABLE IF NOT EXISTS member_of (
 	user_id INT NOT NULL,
 	org_id INT NOT NULL,
+	admin BOOLEAN NOT NULL DEFAULT false,
 	PRIMARY KEY (user_id, org_id),
 	FOREIGN KEY (user_id) REFERENCES users (id),
 	FOREIGN KEY (org_id) REFERENCES organization (id)

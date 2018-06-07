@@ -111,6 +111,36 @@ func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	return orgs, err
 }
 
+/* Inserts the given member as a member of the organization in the database
+ */
+func (d *driver) InsertOrgMember(username, org string, isAdmin bool) error {
+	u, err := d.GetUserByUsername(username)
+	if err != nil {
+		return err
+	}
+
+	o, err := d.GetOrganizationByName(org)
+	if err != nil {
+		return err
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Unable to begin transaction: %v", err)
+		return err
+	}
+
+	_, err = tx.Exec("INSERT INTO member_of(user_id, org_id, admin) VALUES($1, $2)", u.ID, o.ID, isAdmin)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Unable to insert member into org: %v", err)
+		return err
+	}
+
+	return tx.Commit()
+}
+
 /* Inserts the given organization into the database
  */
 func (d *driver) InsertOrganization(org organization.Organization) error {
