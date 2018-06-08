@@ -38,6 +38,7 @@ func New(api handlers.API, sm session.Manager) (*Server, error) {
 	s.Router.HandleFunc("/organizations/{organization}", api.GetOrganization).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations", l.LoggedIn(api.CreateOrganization)).Methods(http.MethodPost)
 
+	s.Router.HandleFunc("/organizations/{organization}/teams/{team}", api.GetTeam).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.CreateTeam).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.GetTeams).Methods(http.MethodGet)
 

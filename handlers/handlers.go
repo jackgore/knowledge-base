@@ -249,6 +249,36 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+/* GET /organizations/<organization>/teams/{team}
+ *
+ * Receives the team within the requested organization
+ */
+func (h *Handler) GetTeam(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	orgName := params["organization"]
+	teamName := params["team"]
+
+	_, err := h.db.GetOrganizationByName(orgName)
+	if err != nil {
+		handleError(w, ResourceNotFoundError, http.StatusBadRequest)
+		return
+	}
+
+	team, err := h.db.GetTeamByName(orgName, teamName)
+	if err != nil {
+		handleError(w, DBGetError, http.StatusInternalServerError)
+		return
+	}
+
+	contents, err := json.Marshal(team)
+	if err != nil {
+		handleError(w, JSONError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(contents)
+}
+
 /* GET /organizations/<organization>/teams
  *
  * Receives a page of teams within an organization
@@ -276,8 +306,6 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(contents)
-	return
-
 }
 
 /* POST /organizations/<organization>/teams

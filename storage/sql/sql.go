@@ -76,9 +76,12 @@ func (d *driver) GetOrganization(orgID int) (organization.Organization, error) {
  */
 func (d *driver) GetOrganizationByName(name string) (organization.Organization, error) {
 	org := organization.Organization{}
-	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM organization WHERE name=$1",
-		name).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+	err := d.db.QueryRow("SELECT id, name, created_on, is_public, "+
+		" (SELECT count(*) FROM member_of WHERE id=org_id)"+
+		" FROM organization WHERE name=$1",
+		name).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic, &org.MemberCount)
 	if err != nil {
+		log.Printf("Error retriving org by name: %v", err)
 		return org, err
 	}
 
