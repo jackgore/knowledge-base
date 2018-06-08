@@ -307,6 +307,7 @@ func (d *driver) GetQuestions() ([]question.Question, error) {
 		" SELECT post.id as id, submitted_on, title, content, username, views," +
 			" (SELECT count(*) from answer where post.id=answer.question) as answers" +
 			" FROM (post NATURAL JOIN question) JOIN users on (users.id = post.author)" +
+			" WHERE post.id NOT IN (SELECT pid FROM post_of)" +
 			" order by submitted_on")
 	if err != nil {
 		log.Printf("Unable to receive questions from the db: %v", err)
