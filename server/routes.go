@@ -31,6 +31,7 @@ func New(api handlers.API, sm session.Manager) (*Server, error) {
 
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
+	s.Router.HandleFunc("/profile", api.GetProfile).Methods(http.MethodGet)
 	s.Router.HandleFunc("/login", api.Login).Methods(http.MethodPost)
 	s.Router.HandleFunc("/logout", api.Logout).Methods(http.MethodPost)
 

@@ -466,6 +466,30 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.Write(JSON(SuccessResponse{"Success", http.StatusOK}))
 }
 
+/* GET /profile
+ *
+ * Retrieves the user from the db, inferring from session cookie
+ */
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		msg := "Must be logged in to view profile"
+		handleError(w, msg, http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.db.GetUserByUsername(sess.Username)
+	if err != nil {
+		handleError(w, DBGetError, http.StatusNotFound)
+		return
+	}
+
+	// Now that we have the user set password field to ""
+	user.Password = ""
+
+	w.Write(JSON(user))
+}
+
 /* GET /users/{username}
  *
  * Retrieves the user from the database with the given username
@@ -485,7 +509,6 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user.Password = ""
 
 	w.Write(JSON(user))
-	return
 }
 
 /* POST /questions
