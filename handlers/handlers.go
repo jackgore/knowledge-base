@@ -31,6 +31,7 @@ const (
 	DBGetError              = "Unable to retrieve data from database"
 	InvalidPathParamError   = "Received bad bath paramater"
 	InvalidCredentialsError = "Invalid username or password"
+	InvalidQueryParamError  = "Invalid query paramater"
 	InternalServerError     = "Internal server error"
 	LoginFailedError        = "Login failed"
 	LogoutFailedError       = "Logout failed"
@@ -45,6 +46,22 @@ type Handler struct {
 
 func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
+}
+
+/* Consumes an http request and flattens the query
+ * paramaters
+ */
+func parseQueryParams(r *http.Request) map[string]string {
+	params := make(map[string]string)
+
+	m := r.URL.Query()
+	for key, vals := range m {
+		for _, val := range vals {
+			params[key] = val
+		}
+	}
+
+	return params
 }
 
 func handleError(w http.ResponseWriter, message string, code int) {
@@ -586,14 +603,28 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
  * TODO: accept query params
  */
 func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
-	questions, err := h.db.GetQuestions()
+	var questions []question.Question
+	var err error
+
+	qparams := parseQueryParams(r)
+	if val, ok := qparams["user"]; ok {
+		id, cerr := strconv.Atoi(val)
+		if cerr != nil {
+			handleError(w, InvalidQueryParamError, http.StatusInternalServerError)
+			return
+		}
+
+		questions, err = h.db.GetUserQuestions(id)
+	} else {
+		questions, err = h.db.GetQuestions()
+	}
+
 	if err != nil {
 		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	w.Write(JSON(questions))
-	return
 }
 
 /* POST /questions/{id}/view

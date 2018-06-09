@@ -304,6 +304,38 @@ func (d *driver) ViewQuestion(id int) error {
 }
 
 /* Gets a page of questions from the database
+ * for the user with the given userid
+ */
+func (d *driver) GetUserQuestions(uid int) ([]question.Question, error) {
+	rows, err := d.db.Query(
+		" SELECT post.id as id, submitted_on, title, content, author, views,"+
+			" (SELECT count(*) from answer where post.id=answer.question) as answers"+
+			" FROM post NATURAL JOIN question"+
+			" WHERE post.id NOT IN (SELECT pid FROM post_of) AND author=$1"+
+			" order by submitted_on", uid)
+	if err != nil {
+		log.Printf("Unable to receive questions from the db: %v", err)
+		return nil, err
+	}
+
+	// TODO The two GetQuestions function have very similar scanning code but differ on 1 column
+	//      not sure the best way to abstract this.
+	questions := make([]question.Question, 0)
+	for rows.Next() {
+		question := question.Question{}
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title,
+			&question.Content, &question.Author, &question.Views, &question.Answers)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		questions = append(questions, question)
+	}
+
+	return questions, err
+}
+
+/* Gets a page of questions from the database
  */
 func (d *driver) GetQuestions() ([]question.Question, error) {
 	rows, err := d.db.Query(
