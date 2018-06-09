@@ -8,13 +8,14 @@ import (
 )
 
 type User struct {
-	ID        int       `json:"id,omitempty"`
-	Username  string    `json:"username"`
-	Password  string    `json:"password,omitempty"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	JoinedOn  time.Time `json:"joined-on"`
+	ID            int       `json:"id,omitempty"`
+	Username      string    `json:"username"`
+	Password      string    `json:"password,omitempty"`
+	Email         string    `json:"email"`
+	FirstName     string    `json:"first_name"`
+	LastName      string    `json:"last_name"`
+	Organizations []string  `json:"organizations"`
+	JoinedOn      time.Time `json:"joined-on"`
 }
 
 // Formats the users to a string omitting the password

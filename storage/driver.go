@@ -35,6 +35,7 @@ type Driver interface {
 	GetTeams(org string) ([]team.Team, error)
 	InsertTeam(team.Team) error
 
+	GetUserOrganizations(uid int) ([]organization.Organization, error)
 	GetOrganization(orgID int) (organization.Organization, error)
 	GetOrganizationByName(name string) (organization.Organization, error)
 	GetOrganizations() ([]organization.Organization, error)

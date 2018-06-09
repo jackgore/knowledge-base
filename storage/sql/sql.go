@@ -90,6 +90,31 @@ func (d *driver) GetOrganizationByName(name string) (organization.Organization, 
 
 /* Gets a page of organizations from the database
  */
+func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, error) {
+	rows, err := d.db.Query("SELECT id, name, created_on, is_public"+
+		" FROM organization JOIN member_of ON (id=member_of.org_id)"+
+		" WHERE member_of.user_id=$1 order by name", uid)
+	if err != nil {
+		log.Printf("Unable to receive organizations from the db: %v", err)
+		return nil, err
+	}
+
+	orgs := make([]organization.Organization, 0)
+	for rows.Next() {
+		org := organization.Organization{}
+		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		orgs = append(orgs, org)
+	}
+
+	return orgs, err
+}
+
+/* Gets a page of organizations from the database
+ */
 func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	rows, err := d.db.Query("SELECT id, name, created_on, is_public," +
 		" (SELECT count(*) FROM member_of WHERE id=org_id)" +

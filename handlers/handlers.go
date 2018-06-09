@@ -64,6 +64,20 @@ func parseQueryParams(r *http.Request) map[string]string {
 	return params
 }
 
+func (h *Handler) getUserOrgNames(id int) ([]string, error) {
+	orgs, err := h.db.GetUserOrganizations(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var orgNames = make([]string, len(orgs))
+	for i, org := range orgs {
+		orgNames[i] = org.Name
+	}
+
+	return orgNames, nil
+}
+
 func handleError(w http.ResponseWriter, message string, code int) {
 	_, fn, line, _ := runtime.Caller(1)
 	log.Printf("Error at: %v:%v - %v", fn, line, message)
@@ -501,6 +515,12 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user.Organizations, err = h.getUserOrgNames(user.ID)
+	if err != nil {
+		handleError(w, DBGetError, http.StatusInternalServerError)
+		return
+	}
+
 	// Now that we have the user set password field to ""
 	user.Password = ""
 
@@ -519,6 +539,12 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
 		handleError(w, DBGetError, http.StatusNotFound)
+		return
+	}
+
+	user.Organizations, err = h.getUserOrgNames(user.ID)
+	if err != nil {
+		handleError(w, DBGetError, http.StatusInternalServerError)
 		return
 	}
 
