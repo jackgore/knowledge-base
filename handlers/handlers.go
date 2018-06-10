@@ -439,6 +439,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user.JoinedOn = time.Now()
+
 	err = h.db.InsertUser(user)
 	if err != nil {
 		handleError(w, DBInsertError, http.StatusInternalServerError)
