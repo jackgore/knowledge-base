@@ -35,14 +35,6 @@ CREATE TABLE IF NOT EXISTS member_of (
 	FOREIGN KEY (org_id) REFERENCES organization (id)
 );
 
-CREATE TABLE IF NOT EXISTS team_of (
-	org_id INT NOT NULL,
-	team_id INT NOT NULL,
-	PRIMARY KEY (org_id, team_id),
-	FOREIGN KEY (org_id) REFERENCES organization (id),
-	FOREIGN KEY (team_id) REFERENCES team (id)
-);
-
 CREATE TABLE IF NOT EXISTS post_of (
 	pid INT NOT NULL,
 	tid INT NOT NULL,

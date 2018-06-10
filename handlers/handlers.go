@@ -118,6 +118,24 @@ func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (quest
 	return q, nil
 }
 
+/* GET /organizations/{org}/questions
+ *
+ * Receives a page of questions for the provided team
+ * TODO: accept query params
+ */
+func (h *Handler) GetOrgQuestions(w http.ResponseWriter, r *http.Request) {
+	org := mux.Vars(r)["org"]
+
+	questions, err := h.db.GetOrgQuestions(org)
+	if err != nil {
+		handleError(w, DBGetError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(JSON(questions))
+	return
+}
+
 /* GET /organizations/{org}/teams/{team}/questions
  *
  * Receives a page of questions for the provided team

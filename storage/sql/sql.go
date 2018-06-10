@@ -416,6 +416,40 @@ func (d *driver) InsertQuestion(question question.Question) (int, error) {
 	return postID, tx.Commit()
 }
 
+func scanQuestions(rows *sql.Rows) ([]question.Question, error) {
+	questions := make([]question.Question, 0)
+	for rows.Next() {
+		question := question.Question{}
+		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content,
+			&question.Username, &question.Views, &question.Answers)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			return questions, err
+		}
+		questions = append(questions, question)
+	}
+
+	return questions, nil
+
+}
+
+/* Gets a page of questions from the database for the requested team and org
+ */
+func (d *driver) GetOrgQuestions(org string) ([]question.Question, error) {
+	rows, err := d.db.Query(
+		" SELECT post.id as id, submitted_on, title, content, username, views,"+
+			" (SELECT count(*) from answer where post.id=answer.question) as answers"+
+			" FROM (((question NATURAL JOIN post) JOIN users ON (post.author = users.id))"+
+			" JOIN post_of ON (post_of.pid = question.id)) JOIN team ON (post_of.tid=team.id)"+
+			" WHERE team.org_id=(SELECT distinct id FROM organization WHERE name=$1)", org)
+	if err != nil {
+		log.Printf("Unable to receive questions from the db: %v", err)
+		return nil, err
+	}
+
+	return scanQuestions(rows)
+}
+
 /* Gets a page of questions from the database for the requested team and org
  */
 func (d *driver) GetTeamQuestions(team, org string) ([]question.Question, error) {
@@ -430,19 +464,7 @@ func (d *driver) GetTeamQuestions(team, org string) ([]question.Question, error)
 		return nil, err
 	}
 
-	questions := make([]question.Question, 0)
-	for rows.Next() {
-		question := question.Question{}
-		err := rows.Scan(&question.ID, &question.SubmittedOn, &question.Title, &question.Content,
-			&question.Username, &question.Views, &question.Answers)
-		if err != nil {
-			log.Printf("Received error scanning in data from database: %v", err)
-			return questions, err
-		}
-		questions = append(questions, question)
-	}
-
-	return questions, err
+	return scanQuestions(rows)
 }
 
 /* Inserts the given question into the database for the given team.

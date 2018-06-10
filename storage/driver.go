@@ -18,6 +18,7 @@ type Driver interface {
 	GetQuestions() ([]question.Question, error)
 	GetUserQuestions(id int) ([]question.Question, error)
 	GetTeamQuestions(team, org string) ([]question.Question, error)
+	GetOrgQuestions(org string) ([]question.Question, error)
 	InsertQuestion(question question.Question) (int, error)
 	InsertTeamQuestion(question question.Question, tid int) (int, error)
 	ViewQuestion(id int) error
