@@ -170,15 +170,15 @@ func (d *driver) InsertOrgMember(username, org string, isAdmin bool) error {
 
 /* Inserts the given organization into the database
  */
-func (d *driver) InsertOrganization(org organization.Organization) error {
-	_, err := d.db.Exec("INSERT INTO organization(name, created_on, is_public) VALUES($1, $2, $3)",
-		org.Name, org.CreatedOn, org.IsPublic)
+func (d *driver) InsertOrganization(org organization.Organization) (int, error) {
+	err := d.db.QueryRow("INSERT INTO organization(name, created_on, is_public) VALUES($1, $2, $3) returning id;",
+		org.Name, org.CreatedOn, org.IsPublic).Scan(&org.ID)
 	if err != nil {
 		log.Printf("Unable to insert org: %v", err)
-		return err
+		return 0, err
 	}
 
-	return nil
+	return org.ID, nil
 }
 
 /* Gets the teams for the given org from the database.
@@ -186,7 +186,7 @@ func (d *driver) InsertOrganization(org organization.Organization) error {
 func (d *driver) GetTeams(org string) ([]team.Team, error) {
 	rows, err := d.db.Query("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public"+
 		" FROM team JOIN organization on (team.org_id = organization.id)"+
-		" WHERE organization.name = $1"+
+		" WHERE organization.name = $1 AND team.name<>'default'"+
 		" order by team.name", org)
 	if err != nil {
 		log.Printf("Unable to receive teams for org %v from the db: %v", org, err)

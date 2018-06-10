@@ -274,7 +274,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 	org.CreatedOn = time.Now()
 
-	err = h.db.InsertOrganization(org)
+	id, err := h.db.InsertOrganization(org)
 	if err != nil {
 		log.Printf("Unable to insert organization into database: %v", err)
 		handleError(w, DBInsertError, http.StatusBadRequest)
@@ -283,7 +283,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
-		msg := "Must be logged in to create a question"
+		msg := "Must be logged in to create an organization"
 		handleError(w, msg, http.StatusUnauthorized)
 		return
 	}
@@ -291,6 +291,22 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	err = h.db.InsertOrgMember(sess.Username, org.Name, true)
 	if err != nil {
 		log.Printf("unable to insert user as member: %v", err)
+		handleError(w, DBInsertError, http.StatusInternalServerError)
+		return
+	}
+
+	// We want to have a default team for every organization - call it `default`
+	defaultTeam := team.Team{
+		Name:         "default",
+		Organization: id,
+		CreatedOn:    time.Now(),
+		IsPublic:     org.IsPublic,
+		MemberCount:  1,
+		AdminCount:   1,
+	}
+
+	err = h.db.InsertTeam(defaultTeam)
+	if err != nil {
 		handleError(w, DBInsertError, http.StatusInternalServerError)
 		return
 	}
