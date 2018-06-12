@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/question"
 	"github.com/JonathonGore/knowledge-base/models/team"
+	"github.com/JonathonGore/knowledge-base/query"
 	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
@@ -37,68 +37,31 @@ func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{UserRoutes: userHandler, db: d, sessionManager: sm}, nil
 }
 
-/* Consumes an http request and flattens the query
- * paramaters
- */
-func parseQueryParams(r *http.Request) map[string]string {
-	params := make(map[string]string)
-
-	m := r.URL.Query()
-	for key, vals := range m {
-		for _, val := range vals {
-			params[key] = val
-		}
-	}
-
-	return params
-}
-
-func (h *Handler) getUserOrgNames(id int) ([]string, error) {
-	orgs, err := h.db.GetUserOrganizations(id)
-	if err != nil {
-		return nil, err
-	}
-
-	var orgNames = make([]string, len(orgs))
-	for i, org := range orgs {
-		orgNames[i] = org.Name
-	}
-
-	return orgNames, nil
-}
-
-func handleError(w http.ResponseWriter, message string, code int) {
-	_, fn, line, _ := runtime.Caller(1)
-	log.Printf("Error at: %v:%v - %v", fn, line, message)
-	w.WriteHeader(code)
-	w.Write(JSON(ErrorResponse{message, code}))
-}
-
 func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (question.Question, error) {
 	q := question.Question{}
 	err := httputil.UnmarshalRequestBody(r, &q)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return q, err
 	}
 
 	err = question.Validate(q)
 	if err != nil {
-		handleError(w, err.Error(), http.StatusBadRequest)
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return q, err
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
 		msg := "Must be logged in to create a question"
-		handleError(w, msg, http.StatusUnauthorized)
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
 		return q, err
 	}
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		msg := "Received question authored by a user that doesn't exist."
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return q, err
 	}
 
@@ -117,7 +80,7 @@ func (h *Handler) GetOrgQuestions(w http.ResponseWriter, r *http.Request) {
 
 	questions, err := h.db.GetOrgQuestions(org)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
@@ -137,7 +100,7 @@ func (h *Handler) GetTeamQuestions(w http.ResponseWriter, r *http.Request) {
 
 	questions, err := h.db.GetTeamQuestions(team, org)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
@@ -165,13 +128,13 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.db.GetOrganizationByName(org)
 	if err != nil {
-		handleError(w, fmt.Sprintf("Organization %v does not exist", org), http.StatusBadRequest)
+		httputil.HandleError(w, fmt.Sprintf("Organization %v does not exist", org), http.StatusBadRequest)
 		return
 	}
 
 	t, err := h.db.GetTeamByName(org, team)
 	if err != nil {
-		handleError(w, fmt.Sprintf("Team %v does not exist", org), http.StatusBadRequest)
+		httputil.HandleError(w, fmt.Sprintf("Team %v does not exist", org), http.StatusBadRequest)
 		return
 	}
 
@@ -180,7 +143,7 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.db.InsertTeamQuestion(q, t.ID)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -195,13 +158,13 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := h.db.GetOrganizations()
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	contents, err := json.Marshal(orgs)
 	if err != nil {
-		handleError(w, errors.JSONError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -219,13 +182,13 @@ func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	// TODO: Add existance check
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusNotFound)
+		httputil.HandleError(w, errors.DBGetError, http.StatusNotFound)
 		return
 	}
 
 	contents, err := json.Marshal(org)
 	if err != nil {
-		handleError(w, errors.JSONError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -244,20 +207,20 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	org := organization.Organization{}
 	err := httputil.UnmarshalRequestBody(r, &org)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 
 	err = organization.Validate(org)
 	if err != nil {
-		handleError(w, errors.CreateResourceError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.CreateResourceError, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetOrganizationByName(org.Name)
 	if err == nil {
 		msg := fmt.Sprintf("Attempted to create organization %v but name already exists", org.Name)
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -266,21 +229,21 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	id, err := h.db.InsertOrganization(org)
 	if err != nil {
 		log.Printf("Unable to insert organization into database: %v", err)
-		handleError(w, errors.DBInsertError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusBadRequest)
 		return
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
 		msg := "Must be logged in to create an organization"
-		handleError(w, msg, http.StatusUnauthorized)
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	err = h.db.InsertOrgMember(sess.Username, org.Name, true)
 	if err != nil {
 		log.Printf("unable to insert user as member: %v", err)
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -296,7 +259,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.InsertTeam(defaultTeam)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -314,19 +277,19 @@ func (h *Handler) GetTeam(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		handleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
 		return
 	}
 
 	team, err := h.db.GetTeamByName(orgName, teamName)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	contents, err := json.Marshal(team)
 	if err != nil {
-		handleError(w, errors.JSONError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -343,19 +306,19 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		handleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
 		return
 	}
 
 	teams, err := h.db.GetTeams(orgName)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
 	contents, err := json.Marshal(teams)
 	if err != nil {
-		handleError(w, errors.JSONError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
 		return
 	}
 
@@ -374,26 +337,26 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	t := team.Team{}
 	err := httputil.UnmarshalRequestBody(r, &t)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	err = team.Validate(t)
 	if err != nil {
-		handleError(w, errors.CreateResourceError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.CreateResourceError, http.StatusBadRequest)
 		return
 	}
 
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		handleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetTeamByName(orgName, t.Name)
 	if err == nil {
 		msg := fmt.Sprintf("Team with name %v within %v already exists", t.Name, orgName)
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -401,7 +364,7 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.InsertTeam(t)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -420,27 +383,27 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
 	err := httputil.UnmarshalRequestBody(r, &q)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	err = question.Validate(q)
 	if err != nil {
-		handleError(w, err.Error(), http.StatusBadRequest)
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
 		msg := "Must be logged in to create a question"
-		handleError(w, msg, http.StatusUnauthorized)
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		msg := "Received question authored by a user that doesn't exist."
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -448,7 +411,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.db.InsertQuestion(q)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -464,13 +427,13 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		handleError(w, errors.BadIDError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
 		return
 	}
 
 	question, err := h.db.GetQuestion(id)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
@@ -486,11 +449,11 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	var questions []question.Question
 	var err error
 
-	qparams := parseQueryParams(r)
+	qparams := query.ParseParams(r)
 	if val, ok := qparams["user"]; ok {
 		id, cerr := strconv.Atoi(val)
 		if cerr != nil {
-			handleError(w, errors.InvalidQueryParamError, http.StatusInternalServerError)
+			httputil.HandleError(w, errors.InvalidQueryParamError, http.StatusInternalServerError)
 			return
 		}
 
@@ -500,7 +463,7 @@ func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
@@ -517,14 +480,14 @@ func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		handleError(w, errors.BadIDError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
 		return
 	}
 
 	err = h.db.ViewQuestion(id)
 	if err != nil {
 		log.Printf("Unable to update view count for question with id: %v. Error: %v", id, err)
-		handleError(w, errors.DBUpdateError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBUpdateError, http.StatusInternalServerError)
 		return
 	}
 
@@ -545,7 +508,7 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		handleError(w, errors.BadIDError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
 		return
 	}
 
@@ -553,7 +516,7 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	err = httputil.UnmarshalRequestBody(r, &ans)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		handleError(w, errors.JSONParseError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 
@@ -563,21 +526,21 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	err = answer.Validate(ans)
 	if err != nil {
 		msg := fmt.Sprintf("Invalid answer: %v", err)
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
 		msg := fmt.Sprintf("You must be logged in to answer a question")
-		handleError(w, msg, http.StatusUnauthorized)
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	u, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
 		msg := fmt.Sprintf("Received answer authored by a user that doesn't exist.")
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -587,13 +550,13 @@ func (h *Handler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	_, err = h.db.GetQuestion(id)
 	if err != nil {
 		msg := fmt.Sprintf("Received answer to a question that doesn't exist.")
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	err = h.db.InsertAnswer(ans)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -609,13 +572,13 @@ func (h *Handler) GetAnswers(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		handleError(w, errors.BadIDError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
 		return
 	}
 
 	ans, err := h.db.GetAnswers(id)
 	if err != nil {
-		handleError(w, errors.ResourceNotFoundError, http.StatusNotFound)
+		httputil.HandleError(w, errors.ResourceNotFoundError, http.StatusNotFound)
 		return
 	}
 

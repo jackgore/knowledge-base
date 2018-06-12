@@ -25,22 +25,6 @@ func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
-/* Consumes an http request and flattens the query
- * paramaters
- */
-func parseQueryParams(r *http.Request) map[string]string {
-	params := make(map[string]string)
-
-	m := r.URL.Query()
-	for key, vals := range m {
-		for _, val := range vals {
-			params[key] = val
-		}
-	}
-
-	return params
-}
-
 func (h *Handler) getUserOrgNames(id int) ([]string, error) {
 	orgs, err := h.db.GetUserOrganizations(id)
 	if err != nil {
