@@ -1,0 +1,32 @@
+[
+{
+  "method": "post",
+  "endpoint": "/users",
+  "request": {
+    "json": {
+       "username": "Jacky",
+       "password": "password",
+       "email": "jack@gmail.com",
+       "first_name": "Jack",
+       "last_name": "Gore"
+    }
+  },
+  "response": {
+    "code": 200
+  }
+},
+{
+  "endpoint": "/users/Jacky",
+  "response": {
+    "json": {
+       "username": "Jacky",
+       "email": "jack@gmail.com",
+       "first_name": "Jack",
+       "last_name": "Gore"
+    }
+  },
+  "response": {
+    "code": 200
+  }
+}
+]
