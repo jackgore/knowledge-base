@@ -16,17 +16,16 @@
   }
 },
 {
+  "method": "get",
   "endpoint": "/users/Jacky",
   "response": {
+    "code": 200,
     "json": {
        "username": "Jacky",
        "email": "jack@gmail.com",
        "first_name": "Jack",
        "last_name": "Gore"
     }
-  },
-  "response": {
-    "code": 200
   }
 }
 ]
