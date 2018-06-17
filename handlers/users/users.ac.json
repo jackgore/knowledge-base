@@ -1,5 +1,6 @@
 [
 {
+  "description": "creating a user",
   "method": "post",
   "endpoint": "/users",
   "request": {
@@ -16,6 +17,7 @@
   }
 },
 {
+  "description": "retrieving a user",
   "method": "get",
   "endpoint": "/users/Jacky",
   "response": {
