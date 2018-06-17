@@ -7,26 +7,25 @@ import (
 )
 
 const (
+	// TODO: These should be read in from a file
 	maxNameLength = 100 // Maximum length of the name of the org
 	minNameLength = 1   // Minimum length of the name of the org
 )
 
 type Organization struct {
 	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	CreatedOn   time.Time `json:"created-on"`
-	IsPublic    bool      `json:"is-public"`
 	MemberCount int       `json:"member-count"`
 	TeamCount   int       `json:"team-count"`
 	AdminCount  int       `json:"admin-count"`
+	Name        string    `json:"name"`
+	CreatedOn   time.Time `json:"created-on"`
+	IsPublic    bool      `json:"is-public"`
 
 	Members []int `json:"members"` // Note: Not sure if it makes sense to have these fields
 	Admins  []int `json:"admins"`
 }
 
-/* Validates the given org to make sure all fields all
- * meet the required specifications.
- */
+// Validate ensures the given org meets the required specifications.
 func Validate(org Organization) error {
 	err := validateID(org.ID)
 	if err != nil {
