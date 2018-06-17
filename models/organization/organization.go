@@ -17,6 +17,7 @@ type Organization struct {
 	CreatedOn   time.Time `json:"created-on"`
 	IsPublic    bool      `json:"is-public"`
 	MemberCount int       `json:"member-count"`
+	TeamCount   int       `json:"team-count"`
 	AdminCount  int       `json:"admin-count"`
 
 	Members []int `json:"members"` // Note: Not sure if it makes sense to have these fields
