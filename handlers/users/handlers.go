@@ -4,27 +4,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"time"
 
 	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/errors"
+	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/session"
-	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
 
+type storage interface {
+	GetUser(userID int) (user.User, error)
+	GetUserByUsername(username string) (user.User, error)
+	GetUserOrganizations(uid int) ([]organization.Organization, error)
+	InsertUser(user user.User) error
+}
+
 type Handler struct {
-	db             storage.Driver
+	db             storage
 	sessionManager session.Manager
 }
 
-func New(d storage.Driver, sm session.Manager) (*Handler, error) {
+func New(d storage, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
+// Gets a list of organization names that the user with the provided id belongs to
 func (h *Handler) getUserOrgNames(id int) ([]string, error) {
 	orgs, err := h.db.GetUserOrganizations(id)
 	if err != nil {
@@ -39,13 +46,6 @@ func (h *Handler) getUserOrgNames(id int) ([]string, error) {
 	return orgNames, nil
 }
 
-func handleError(w http.ResponseWriter, message string, code int) {
-	_, fn, line, _ := runtime.Caller(1)
-	log.Printf("Error at: %v:%v - %v", fn, line, message)
-	w.WriteHeader(code)
-	w.Write(httputil.JSON(httputil.ErrorResponse{message, code}))
-}
-
 /* POST /users
  *
  * Signs up the given user by inserting them into the database.
@@ -56,21 +56,21 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user := user.User{}
 	err := httputil.UnmarshalRequestBody(r, &user)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Received the following user to signup: %v", user.SafePrint())
 
 	if err = creds.ValidateSignupCredentials(user.Username, user.Password); err != nil {
-		handleError(w, err.Error(), http.StatusBadRequest)
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetUserByUsername(user.Username)
 	if err == nil {
 		msg := fmt.Sprintf("User with username %v already exists", user.Username)
-		handleError(w, msg, http.StatusBadRequest)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user.Password, err = creds.HashPassword(user.Password)
 	if err != nil {
 		log.Printf("Error hashing user password: %v", err)
-		handleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.InsertUser(user)
 	if err != nil {
-		handleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -106,14 +106,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	attemptedUser := user.LoginAttempt{}
 	err := httputil.UnmarshalRequestBody(r, &attemptedUser)
 	if err != nil {
-		handleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Received the following user to login: %v", attemptedUser.Username)
 
 	if attemptedUser.Username == "" || attemptedUser.Password == "" {
-		handleError(w, errors.EmptyCredentialsError, http.StatusBadRequest)
+		httputil.HandleError(w, errors.EmptyCredentialsError, http.StatusBadRequest)
 		return
 	}
 
@@ -125,21 +125,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	actualUser, err := h.db.GetUserByUsername(attemptedUser.Username)
 	if err != nil {
-		handleError(w, errors.InvalidCredentialsError, http.StatusUnauthorized)
+		httputil.HandleError(w, errors.InvalidCredentialsError, http.StatusUnauthorized)
 		return
 	}
 
 	// NOTE: attemptedUser.Password is plaintext and actualUser.Password is bcrypted hash of password
 	valid := creds.CheckPasswordHash(attemptedUser.Password, actualUser.Password)
 	if !valid {
-		handleError(w, errors.InvalidCredentialsError, http.StatusUnauthorized)
+		httputil.HandleError(w, errors.InvalidCredentialsError, http.StatusUnauthorized)
 		return
 	}
 
 	// Successfully logged in make sure we have a session -- will insert a session id into the ResponseWriters cookies
 	s, err := h.sessionManager.SessionStart(w, r, actualUser.Username)
 	if err != nil {
-		handleError(w, errors.LoginFailedError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.LoginFailedError, http.StatusInternalServerError)
 		return
 	}
 
@@ -153,7 +153,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := h.sessionManager.SessionDestroy(w, r)
 	if err != nil {
-		handleError(w, errors.LogoutFailedError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.LogoutFailedError, http.StatusInternalServerError)
 		return
 	}
 
@@ -168,19 +168,19 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	sess, err := h.sessionManager.GetSession(r)
 	if err != nil {
 		msg := "Must be logged in to view profile"
-		handleError(w, msg, http.StatusUnauthorized)
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
 		return
 	}
 
 	user, err := h.db.GetUserByUsername(sess.Username)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusNotFound)
+		httputil.HandleError(w, errors.DBGetError, http.StatusNotFound)
 		return
 	}
 
 	user.Organizations, err = h.getUserOrgNames(user.ID)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
@@ -201,13 +201,13 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserByUsername(username)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusNotFound)
+		httputil.HandleError(w, errors.DBGetError, http.StatusNotFound)
 		return
 	}
 
 	user.Organizations, err = h.getUserOrgNames(user.ID)
 	if err != nil {
-		handleError(w, errors.DBGetError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
 	}
 
