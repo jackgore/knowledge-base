@@ -10,7 +10,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/errors"
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/user"
-	"github.com/JonathonGore/knowledge-base/session"
+	sess "github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
@@ -22,12 +22,19 @@ type storage interface {
 	InsertUser(user user.User) error
 }
 
-type Handler struct {
-	db             storage
-	sessionManager session.Manager
+type session interface {
+	GetSession(r *http.Request) (sess.Session, error)
+	HasSession(r *http.Request) bool
+	SessionStart(w http.ResponseWriter, r *http.Request, username string) (sess.Session, error)
+	SessionDestroy(w http.ResponseWriter, r *http.Request) error
 }
 
-func New(d storage, sm session.Manager) (*Handler, error) {
+type Handler struct {
+	db             storage
+	sessionManager session
+}
+
+func New(d storage, sm session) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
