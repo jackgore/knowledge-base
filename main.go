@@ -58,7 +58,7 @@ func main() {
 
 	conf, err := yaml.New(*confFile)
 	if err != nil {
-		log.Fatalf("unable to parse configuration file", err)
+		log.Fatalf("unable to parse configuration file: %v", err)
 	}
 
 	d, err = sql.New(getSQLConfig(conf))

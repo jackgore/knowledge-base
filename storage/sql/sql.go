@@ -537,7 +537,7 @@ func (d *driver) GetAnswers(qid int) ([]answer.Answer, error) {
 func (d *driver) InsertAnswer(answer answer.Answer) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		log.Printf("Unbale to begin transaction: %", err)
+		log.Printf("Unbale to begin transaction: %v", err)
 		return err
 	}
 
