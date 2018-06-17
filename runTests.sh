@@ -25,7 +25,7 @@ sleep 1
 
 # Run our cucumber tests
 echo 'Running api-check tests...'
-api-check
+api-check # github.com/JonathonGore/api-check
 
 # Run our unit tests
 echo 'Running go unit tests...'
