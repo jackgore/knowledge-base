@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/JonathonGore/dots/yaml"
 	"github.com/JonathonGore/knowledge-base/config"
@@ -17,27 +16,6 @@ import (
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
-
-/* sslExists(certPath, keyPath) determines if the given ssl certificate
- * and key file exist in the system.
- *
- * Note: may want to do some validation here in the future.
- */
-func sslExists(certPath, keyPath string) bool {
-	if certPath == "" || keyPath == "" {
-		return false
-	}
-
-	if _, err := os.Stat(certPath); os.IsNotExist(err) {
-		return false
-	}
-
-	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
 
 func getSQLConfig(conf config.Config) sql.Config {
 	return (sql.Config{
@@ -87,14 +65,6 @@ func main() {
 		TLSConfig: &tls.Config{},
 	}
 
-	certFile := conf.GetString("ssl.certificate")
-	keyFile := conf.GetString("ssl.key")
-
-	if !sslExists(certFile, keyFile) {
-		log.Printf("Starting server over http on port: %v", conf.GetInt("server.port"))
-		log.Fatal(srv.ListenAndServe())
-	}
-
-	log.Printf("Starting server over https on port: %v", conf.GetInt("server.port"))
-	log.Fatal(srv.ListenAndServeTLS(certFile, keyFile))
+	log.Printf("Starting server over http on port: %v", conf.GetInt("server.port"))
+	log.Fatal(srv.ListenAndServe())
 }
