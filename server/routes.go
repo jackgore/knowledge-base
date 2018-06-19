@@ -46,7 +46,7 @@ func New(api handlers.API, sm session.Manager) (*Server, error) {
 
 	// Attach middleware to mux router
 	s.Router.Use(wrappers.Log)
-	//s.Router.Use(wrappers.JSONResponse) // All of our routes should return JSON
+	s.Router.Use(wrappers.JSONResponse) // All of our routes should return JSON
 
 	return s, nil
 }
