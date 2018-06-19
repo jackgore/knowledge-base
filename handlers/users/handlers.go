@@ -38,14 +38,15 @@ func New(d storage, sm session) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
-// Gets a list of organization names that the user with the provided id belongs to
+// GetUserOrgNames retrieves a list of organization names that the user with
+// the provided id belongs to.
 func (h *Handler) getUserOrgNames(id int) ([]string, error) {
 	orgs, err := h.db.GetUserOrganizations(id)
 	if err != nil {
 		return nil, err
 	}
 
-	var orgNames = make([]string, len(orgs))
+	orgNames := make([]string, len(orgs))
 	for i, org := range orgs {
 		orgNames[i] = org.Name
 	}

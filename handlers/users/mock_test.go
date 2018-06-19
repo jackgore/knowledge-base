@@ -41,6 +41,8 @@ func (m *MockStorage) GetUserOrganizations(uid int) ([]organization.Organization
 		}
 
 		return orgs, nil
+	} else if uid == emptyUserID {
+		return []organization.Organization{}, nil
 	}
 
 	return nil, errors.New("invalid user id")
@@ -59,5 +61,5 @@ func (m *MockStorage) GetUser(userID int) (user.User, error) {
 func (m *MockStorage) GetUserByUsername(username string) (user.User, error) {
 	var u user.User
 
-	return u, nil
+	return u, errors.New("error")
 }
