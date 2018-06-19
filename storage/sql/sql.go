@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/JonathonGore/knowledge-base/models/answer"
 	"github.com/JonathonGore/knowledge-base/models/organization"
@@ -13,6 +14,11 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/session"
 	_ "github.com/lib/pq"
+)
+
+const (
+	MaxRetries = 3
+	RetryDelay = 10 // 5 second delay between retrying db connection
 )
 
 type driver struct {
@@ -561,26 +567,33 @@ func (d *driver) InsertAnswer(answer answer.Answer) error {
 	return tx.Commit()
 }
 
-/* Creates a new postgres driver consuming an sql.Config object
- * which specifies connection information for the DB.
- */
+// Connect is a helper function to attempt to establish
+// a connection to the database X times.
+func connect(db *sql.DB, retries int) {
+	err := db.Ping()
+	if err != nil && retries > 0 {
+		time.Sleep(RetryDelay * time.Second)
+		log.Printf("Retrying to connect to the database")
+		connect(db, retries-1)
+	} else if err != nil {
+		log.Fatalf("unable to connect to database: %v", err)
+	}
+}
+
+// New consumes an sql.Config object and creates a new postgres driver.
 func New(config Config) (*driver, error) {
 	dbinfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, 5432, config.Username, config.Password, config.DatabaseName)
 
 	db, err := sql.Open("postgres", dbinfo)
 	if err != nil {
-		log.Printf("unable to connect to database %v", err)
+		log.Printf("error opening connection to database %v", err)
 		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
-	}
-
+	log.Printf("Attempting to connect to the database")
+	connect(db, MaxRetries)
 	log.Printf("Successfully connected to database")
-	d := &driver{db}
 
-	return d, nil
+	return &driver{db}, nil
 }

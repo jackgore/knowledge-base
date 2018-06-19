@@ -17,6 +17,12 @@ import (
 	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
 
+const (
+	cookieName     = "knowledge_base"
+	cookieDuration = 3600 * 24 * 365
+)
+
+// GetSQLConfig extracts the sql specific config from the general config object.
 func getSQLConfig(conf config.Config) sql.Config {
 	return (sql.Config{
 		DatabaseName: conf.GetString("database.name"),
@@ -30,9 +36,11 @@ func main() {
 	confFile := flag.String("config", "config.yml", "specify the config file to use")
 	flag.Parse()
 
-	var api handlers.API
-	var conf config.Config
-	var d storage.Driver
+	var (
+		api  handlers.API
+		conf config.Config
+		d    storage.Driver
+	)
 
 	conf, err := yaml.New(*confFile)
 	if err != nil {
@@ -44,7 +52,7 @@ func main() {
 		log.Fatalf("unable to create sql driver: %v", err)
 	}
 
-	sm, err := managers.NewSMManager("knowledge_base", 3600*24*365, d)
+	sm, err := managers.NewSMManager(cookieName, cookieDuration, d)
 	if err != nil {
 		log.Fatalf("unable to create session manager: %v", err)
 	}
