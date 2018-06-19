@@ -1,8 +1,10 @@
 package users
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	sess "github.com/JonathonGore/knowledge-base/session"
 )
@@ -30,6 +32,23 @@ func (m *MockSession) SessionDestroy(w http.ResponseWriter, r *http.Request) err
 }
 
 type MockStorage struct{}
+
+func (m *MockStorage) GetUserOrganizations(uid int) ([]organization.Organization, error) {
+	if uid == validUserID {
+		orgs := []organization.Organization{
+			organization.Organization{Name: "Jack"},
+			organization.Organization{Name: "Hello"},
+		}
+
+		return orgs, nil
+	}
+
+	return nil, errors.New("invalid user id")
+}
+
+func (m *MockStorage) InsertUser(user user.User) error {
+	return nil
+}
 
 func (m *MockStorage) GetUser(userID int) (user.User, error) {
 	var u user.User
