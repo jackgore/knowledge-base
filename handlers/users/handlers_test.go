@@ -17,13 +17,32 @@ const (
 	invalidUserID = 2
 	emptyUserID   = 3
 
-	validUserSignup = `{"username": "jacky", "password": "password"}`
+	validUser          = `{"username": "jacky", "password": "password"}`
+	noUsernameUser     = `{"username": "", "password": "password"}`
+	noPasswordUser     = `{"username": "jacky", "password": ""}`
+	invalidJSONUser    = `"username": "jacky", "password": "password"}`
+	spacesUsernameUser = `{"username": "jacky jacky", "password": "password"}`
+	shortPasswordUser  = `{"username": "jacky jacky", "password": "x"}`
 )
 
 var (
 	handler Handler
 	router  *mux.Router
 )
+
+// Signup handler table tests describing username and password
+// to signup and expected response code
+var signupTests = []struct {
+	body string
+	code int
+}{
+	{validUser, 200},
+	{invalidJSONUser, 400},
+	{noUsernameUser, 400},
+	{noPasswordUser, 400},
+	{spacesUsernameUser, 400},
+	{shortPasswordUser, 400},
+}
 
 func init() {
 	log.SetOutput(ioutil.Discard)
@@ -54,15 +73,17 @@ func TestGetUserOrgNames(t *testing.T) {
 }
 
 func TestSignup(t *testing.T) {
-	r, err := http.NewRequest(http.MethodPost, "/signup", bytes.NewBufferString(validUserSignup))
-	if err != nil {
-		t.Errorf("unexepceted error when creating request %v", err)
-	}
+	for _, test := range signupTests {
+		r, err := http.NewRequest(http.MethodPost, "/signup", bytes.NewBufferString(test.body))
+		if err != nil {
+			t.Errorf("unexepceted error when creating request %v", err)
+		}
 
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, r)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
 
-	if http.StatusOK != w.Code {
-		t.Errorf("Received unexpected status code when signing up user with valid credentials: %v", w.Code)
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v for body: %v", w.Code, test.code, test.body)
+		}
 	}
 }

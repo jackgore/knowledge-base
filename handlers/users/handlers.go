@@ -64,7 +64,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	user := user.User{}
 	err := httputil.UnmarshalRequestBody(r, &user)
 	if err != nil {
-		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 
@@ -85,7 +85,6 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	// Hash our password to avoid storing plaintext in database
 	user.Password, err = creds.HashPassword(user.Password)
 	if err != nil {
-		log.Printf("Error hashing user password: %v", err)
 		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
 		return
 	}
