@@ -10,6 +10,7 @@ type QuestionRoutes interface {
 	GetQuestions(w http.ResponseWriter, r *http.Request)
 	GetTeamQuestions(w http.ResponseWriter, r *http.Request)
 	SubmitTeamQuestion(w http.ResponseWriter, r *http.Request)
+	SubmitOrgQuestion(w http.ResponseWriter, r *http.Request)
 	SubmitQuestion(w http.ResponseWriter, r *http.Request)
 	ViewQuestion(w http.ResponseWriter, r *http.Request)
 }

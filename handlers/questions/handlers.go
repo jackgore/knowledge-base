@@ -25,6 +25,8 @@ func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
 
+// PrepareQuestion is a helper function to validate the the question contained
+// in the given request is valid and is created by a valid user.
 func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (question.Question, error) {
 	q := question.Question{}
 	err := httputil.UnmarshalRequestBody(r, &q)
@@ -96,6 +98,56 @@ func (h *Handler) GetTeamQuestions(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// InsertQuestion inserts the given question for the given team and org. Returns the id
+// if no error is produced. Otherwise returns an error and the http status code to return.
+func (h *Handler) insertQuestion(q question.Question, team, org string) (int, error) {
+	_, err := h.db.GetOrganizationByName(org)
+	if err != nil {
+		return http.StatusBadRequest, fmt.Errorf("Organization %v does not exist", org)
+	}
+
+	t, err := h.db.GetTeamByName(org, team)
+	if err != nil {
+		return http.StatusBadRequest, fmt.Errorf("Default team for org %v does not exist", org)
+	}
+
+	q.Team = team
+	q.Organization = org
+	q.SubmittedOn = time.Now()
+
+	id, err := h.db.InsertTeamQuestion(q, t.ID)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("%v", errors.DBInsertError)
+	}
+
+	return id, nil
+}
+
+/* POST /organizations/{org}/questions
+ *
+ * Receives a question to insert for the given org, validates it
+ * and puts it into the database.
+ *
+ * Expected: { title: <string>, content: <string> }
+ * Author will be inferred from the session attached to the request
+ */
+func (h *Handler) SubmitOrgQuestion(w http.ResponseWriter, r *http.Request) {
+	org := mux.Vars(r)["org"]
+
+	q, err := h.prepareQuestion(w, r)
+	if err != nil {
+		return // We write to w in prepareQuestion
+	}
+
+	id, err := h.insertQuestion(q, "default", org)
+	if err != nil {
+		httputil.HandleError(w, fmt.Sprintf("%v", err), id)
+		return
+	}
+
+	w.Write(httputil.JSON(httputil.IDResponse{id}))
+}
+
 /* POST /organizations/{org}/teams/{team}/questions
  *
  * Receives a question to insert for the given team, validates it
@@ -114,25 +166,9 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 		return // We write to w in prepareQuestion
 	}
 
-	_, err = h.db.GetOrganizationByName(org)
+	id, err := h.insertQuestion(q, team, org)
 	if err != nil {
-		httputil.HandleError(w, fmt.Sprintf("Organization %v does not exist", org), http.StatusBadRequest)
-		return
-	}
-
-	t, err := h.db.GetTeamByName(org, team)
-	if err != nil {
-		httputil.HandleError(w, fmt.Sprintf("Team %v does not exist", org), http.StatusBadRequest)
-		return
-	}
-
-	q.Team = team
-	q.Organization = org
-	q.SubmittedOn = time.Now()
-
-	id, err := h.db.InsertTeamQuestion(q, t.ID)
-	if err != nil {
-		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		httputil.HandleError(w, fmt.Sprintf("%v", err), id)
 		return
 	}
 
