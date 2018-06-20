@@ -34,7 +34,13 @@ type Handler struct {
 	sessionManager session
 }
 
+// New creates a new users handler with the given storage
+// drive and session manager.
 func New(d storage, sm session) (*Handler, error) {
+	if d == nil || sm == nil {
+		return nil, fmt.Errorf("storage drive and session manager must be not nil")
+	}
+
 	return &Handler{d, sm}, nil
 }
 
@@ -82,7 +88,6 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hash our password to avoid storing plaintext in database
 	user.Password, err = creds.HashPassword(user.Password)
 	if err != nil {
 		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
@@ -113,7 +118,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	attemptedUser := user.LoginAttempt{}
 	err := httputil.UnmarshalRequestBody(r, &attemptedUser)
 	if err != nil {
-		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 

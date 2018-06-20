@@ -30,8 +30,6 @@ var (
 	router  *mux.Router
 )
 
-// Signup handler table tests describing username and password
-// to signup and expected response code
 var signupTests = []struct {
 	body string
 	code int
@@ -44,12 +42,22 @@ var signupTests = []struct {
 	{shortPasswordUser, 400},
 }
 
+var loginTests = []struct {
+	body string
+	code int
+}{
+	{invalidJSONUser, 400},
+	{noUsernameUser, 400},
+	{noPasswordUser, 400},
+}
+
 func init() {
 	log.SetOutput(ioutil.Discard)
 
 	handler = Handler{&MockStorage{}, &MockSession{}}
 	router = mux.NewRouter()
 	router.HandleFunc("/signup", handler.Signup).Methods(http.MethodPost)
+	router.HandleFunc("/login", handler.Login).Methods(http.MethodPost)
 }
 
 func TestGetUserOrgNames(t *testing.T) {
@@ -85,5 +93,28 @@ func TestSignup(t *testing.T) {
 		if test.code != w.Code {
 			t.Errorf("Received status code: %v Expected: %v for body: %v", w.Code, test.code, test.body)
 		}
+	}
+}
+
+func TestLogin(t *testing.T) {
+	for _, test := range loginTests {
+		r, err := http.NewRequest(http.MethodPost, "/login", bytes.NewBufferString(test.body))
+		if err != nil {
+			t.Errorf("unexepceted error when creating request %v", err)
+		}
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v for body: %v", w.Code, test.code, test.body)
+		}
+	}
+}
+
+func TestNew(t *testing.T) {
+	_, err := New(nil, nil)
+	if err == nil {
+		t.Errorf("Expected to receive error when passing nil interfaces")
 	}
 }
