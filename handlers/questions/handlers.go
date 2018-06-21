@@ -8,20 +8,49 @@ import (
 	"time"
 
 	"github.com/JonathonGore/knowledge-base/errors"
+	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/question"
+	"github.com/JonathonGore/knowledge-base/models/team"
+	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/query"
-	"github.com/JonathonGore/knowledge-base/session"
-	"github.com/JonathonGore/knowledge-base/storage"
+	sess "github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	db             storage.Driver
-	sessionManager session.Manager
+	db             storage
+	sessionManager session
 }
 
-func New(d storage.Driver, sm session.Manager) (*Handler, error) {
+type storage interface {
+	GetOrgQuestions(org string) ([]question.Question, error)
+	GetOrganizationByName(name string) (organization.Organization, error)
+	GetQuestion(id int) (question.Question, error)
+	GetQuestions() ([]question.Question, error)
+	GetTeamQuestions(team, org string) ([]question.Question, error)
+	GetTeamByName(org, team string) (team.Team, error)
+	GetUserByUsername(username string) (user.User, error)
+	GetUserQuestions(id int) ([]question.Question, error)
+	InsertQuestion(question question.Question) (int, error)
+	InsertTeamQuestion(question question.Question, tid int) (int, error)
+	ViewQuestion(id int) error
+}
+
+type session interface {
+	GetSession(r *http.Request) (sess.Session, error)
+	HasSession(r *http.Request) bool
+	SessionStart(w http.ResponseWriter, r *http.Request, username string) (sess.Session, error)
+	SessionDestroy(w http.ResponseWriter, r *http.Request) error
+}
+
+// New creates a new questions handler with the given storage
+// driver and session manager.
+func New(d storage, sm session) (*Handler, error) {
+	if d == nil || sm == nil {
+		return nil, fmt.Errorf("storage drive and session manager must not be nil")
+	}
+
 	return &Handler{d, sm}, nil
 }
 
@@ -75,7 +104,6 @@ func (h *Handler) GetOrgQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(httputil.JSON(questions))
-	return
 }
 
 /* GET /organizations/{org}/teams/{team}/questions
@@ -95,7 +123,6 @@ func (h *Handler) GetTeamQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(httputil.JSON(questions))
-	return
 }
 
 // InsertQuestion inserts the given question for the given team and org. Returns the id
@@ -187,7 +214,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q := question.Question{}
 	err := httputil.UnmarshalRequestBody(r, &q)
 	if err != nil {
-		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 
