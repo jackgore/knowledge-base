@@ -119,8 +119,7 @@ func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, err
 	return orgs, err
 }
 
-/* Gets a page of organizations from the database
- */
+// GetOrganizations retrieves a page of organizations from the database.
 func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	rows, err := d.db.Query("SELECT id, name, created_on, is_public," +
 		" (SELECT count(*) FROM member_of WHERE id=org_id)," +
@@ -145,8 +144,32 @@ func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	return orgs, err
 }
 
-/* Inserts the given member as a member of the organization in the database
- */
+// GetOrganizationMembers retrieves a list of member usernames from the given organization.
+func (d *driver) GetOrganizationMembers(org string) ([]string, error) {
+	rows, err := d.db.Query(
+		"SELECT username FROM users, organization, member_of"+
+			" WHERE users.id = member_of.user_id AND organization.id = member_of.org_id"+
+			" AND organization.name = $1 ORDER BY username", org)
+	if err != nil {
+		log.Printf("Unable to receive organization members from the db: %v", err)
+		return nil, err
+	}
+
+	usernames := make([]string, 0)
+	for rows.Next() {
+		var username string
+		err := rows.Scan(&username)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		usernames = append(usernames, username)
+	}
+
+	return usernames, nil
+}
+
+// InsertOrgMember insert the given username into the provided org.
 func (d *driver) InsertOrgMember(username, org string, isAdmin bool) error {
 	u, err := d.GetUserByUsername(username)
 	if err != nil {

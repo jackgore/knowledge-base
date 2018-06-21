@@ -6,6 +6,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/handlers"
 	"github.com/JonathonGore/knowledge-base/server/wrappers"
 	"github.com/JonathonGore/knowledge-base/session"
+	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/gorilla/mux"
 )
 
@@ -13,11 +14,14 @@ type Server struct {
 	Router *mux.Router
 }
 
-func New(api handlers.API, sm session.Manager) (*Server, error) {
+func New(api handlers.API, sm session.Manager, db storage.Driver) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
 	l := wrappers.LoggedInMiddleware{}
 	l.Initialize(sm)
+
+	o := wrappers.OrgMemberMiddleware{}
+	o.Initialize(sm, db)
 
 	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
@@ -27,7 +31,7 @@ func New(api handlers.API, sm session.Manager) (*Server, error) {
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}", api.GetQuestion).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{org}/questions", api.GetOrgQuestions).Methods(http.MethodGet)
-	s.Router.HandleFunc("/organizations/{org}/questions", api.SubmitOrgQuestion).Methods(http.MethodPost)
+	s.Router.HandleFunc("/organizations/{org}/questions", o.OrgMember(api.SubmitOrgQuestion)).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.GetTeamQuestions).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.SubmitTeamQuestion).Methods(http.MethodPost)
 
