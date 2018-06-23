@@ -10,6 +10,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/errors"
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/team"
+	"github.com/JonathonGore/knowledge-base/query"
 	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/storage"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
@@ -54,7 +55,6 @@ func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	orgName := mux.Vars(r)["organization"]
 
-	// TODO: Add existance check
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
 		httputil.HandleError(w, errors.DBGetError, http.StatusNotFound)
@@ -68,8 +68,43 @@ func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(contents)
-	return
+}
 
+/* GET /organization/{organization}/members
+ *
+ * Receives a single organization
+ * TODO: accept query params
+ */
+func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request) {
+	orgName := mux.Vars(r)["organization"]
+	params := query.ParseParams(r)
+
+	admins := false
+	if val, ok := params["admins"]; ok {
+		if admins, ok = val.(bool); !ok {
+			admins = false
+		}
+	}
+
+	org, err := h.db.GetOrganizationByName(orgName)
+	if err != nil {
+		httputil.HandleError(w, errors.DBGetError, http.StatusNotFound)
+		return
+	}
+
+	members, err := h.db.GetOrganizationMembers(org.Name, admins)
+	if err != nil {
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
+		return
+	}
+
+	contents, err := json.Marshal(members)
+	if err != nil {
+		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(contents)
 }
 
 /* POST /organizations

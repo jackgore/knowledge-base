@@ -145,11 +145,18 @@ func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 }
 
 // GetOrganizationMembers retrieves a list of member usernames from the given organization.
-func (d *driver) GetOrganizationMembers(org string) ([]string, error) {
+func (d *driver) GetOrganizationMembers(org string, admins bool) ([]string, error) {
+	adminCheck := ""
+	if admins {
+		adminCheck = " AND member_of.admin=true"
+	}
+
 	rows, err := d.db.Query(
 		"SELECT username FROM users, organization, member_of"+
 			" WHERE users.id = member_of.user_id AND organization.id = member_of.org_id"+
-			" AND organization.name = $1 ORDER BY username", org)
+			" AND organization.name = $1"+
+			adminCheck+
+			" ORDER BY username", org)
 	if err != nil {
 		log.Printf("Unable to receive organization members from the db: %v", err)
 		return nil, err

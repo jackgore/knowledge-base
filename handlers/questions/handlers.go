@@ -280,15 +280,14 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	var questions []question.Question
 	var err error
+	var id int
 
 	qparams := query.ParseParams(r)
-	if val, ok := qparams["user"]; ok {
-		id, cerr := strconv.Atoi(val)
-		if cerr != nil {
-			httputil.HandleError(w, errors.InvalidQueryParamError, http.StatusInternalServerError)
+	if userVal, ok := qparams["user"]; ok {
+		if id, ok = userVal.(int); !ok {
+			httputil.HandleError(w, errors.InvalidQueryParamError, http.StatusBadRequest)
 			return
 		}
-
 		questions, err = h.db.GetUserQuestions(id)
 	} else {
 		questions, err = h.db.GetQuestions()

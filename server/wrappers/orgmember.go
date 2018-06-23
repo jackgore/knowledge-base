@@ -42,7 +42,7 @@ func (o *OrgMemberMiddleware) OrgMember(f func(http.ResponseWriter, *http.Reques
 			return
 		}
 
-		members, err := o.db.GetOrganizationMembers(org)
+		members, err := o.db.GetOrganizationMembers(org, false)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write(httputil.JSON(message{"internal server error"}))

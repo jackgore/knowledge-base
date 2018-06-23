@@ -43,6 +43,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver) (*Server, erro
 
 	s.Router.HandleFunc("/organizations", api.GetOrganizations).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{organization}", api.GetOrganization).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{organization}/members", api.GetOrganizationMembers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations", l.LoggedIn(api.CreateOrganization)).Methods(http.MethodPost)
 
 	s.Router.HandleFunc("/organizations/{organization}/teams/{team}", api.GetTeam).Methods(http.MethodGet)
