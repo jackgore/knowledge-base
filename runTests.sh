@@ -23,7 +23,7 @@ PROJ_PID=$!
 
 sleep 1
 
-# Run our cucumber tests
+# Run our api-check tests
 echo 'Running api-check tests...'
 api-check # github.com/JonathonGore/api-check
 

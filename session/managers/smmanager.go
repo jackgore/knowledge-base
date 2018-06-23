@@ -16,6 +16,10 @@ import (
 	"github.com/JonathonGore/knowledge-base/storage"
 )
 
+const (
+	sessionIDLength = 32
+)
+
 // Manager implementation using a go sync map
 type SMManager struct {
 	cookieName       string   // Name of the cookie we are storing in the users http cookies
@@ -95,18 +99,19 @@ func (m *SMManager) HasSession(r *http.Request) bool {
 	return (err == nil && cookie.Value != "")
 }
 
-// checks the existence of any sessions related to the current request, and creates a new session if none is found.
+// SessionStart checks the existence of any sessions related to the current request, and creates a new session if none is found.
 func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, username string) (session.Session, error) {
 	// TODO: Right now if there is a corrupt value for the cookie it will never be repaired
 	if m.HasSession(r) {
-		log.Printf("Found existing session in request to use")
+		log.Printf("Attempted to start session, but found existing session in request to use")
 		return m.GetSession(r)
 	}
 
-	log.Printf("No session cookie found, creating one now")
+	log.Printf("No session cookie found for user :%v, creating one now", username)
 
-	sid := m.generateSessionID()
+	sid := generateSessionID()
 	s := session.Session{SID: sid, Username: username, ExpiresOn: time.Now().Add(time.Duration(m.maxLifetime) * time.Second)}
+
 	m.sessionMap.Store(sid, s)
 	m.db.InsertSession(s)
 
@@ -121,16 +126,19 @@ func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, usernam
 	return s, nil
 }
 
-// Destroys the session stored in the requests cookies -- Needs to be called on logout
+// SessionDestroy removes the session stored in the requests cookies.
+// Typically called on logout.
 func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie(m.cookieName)
 	if err != nil || cookie.Value == "" {
-		log.Printf("Attempted to delete non-existant session")
+		log.Printf("Received request to delete non-existant session")
 		return nil
 	}
 
+	// Remove session from cache and database
 	m.sessionMap.Delete(cookie.Value)
 	m.db.DeleteSession(cookie.Value)
+
 	// Overwrite the current cookie with an expired one
 	ec := http.Cookie{Name: m.cookieName, Path: "/", HttpOnly: true, Expires: time.Unix(0, 0), MaxAge: -1}
 	epc := http.Cookie{Name: m.publicCookieName, Path: "/", Expires: time.Unix(0, 0), MaxAge: -1}
@@ -140,9 +148,9 @@ func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
-// Produces a unique sessionID
-func (m *SMManager) generateSessionID() string {
-	b := make([]byte, 32)
+// GenerateSessionID produces a unique sessionID.
+func generateSessionID() string {
+	b := make([]byte, sessionIDLength)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
 		return ""
 	}
