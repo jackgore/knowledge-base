@@ -22,6 +22,11 @@ type Handler struct {
 	sessionManager session.Manager
 }
 
+type orgAddition struct {
+	Username string `json:"username"`
+	Admin    bool   `json:"admin"`
+}
+
 func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
@@ -105,6 +110,49 @@ func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Write(contents)
+}
+
+/* POST /organizations/{org}/members
+ *
+ * Adds the member to the organization
+ *
+ * Expected body: { "username": "<username>", "admin": false }
+ *
+ * NOTE: We need to assume that this function is called by and admin of the org
+ * which should be handled by our middleware
+ */
+func (h *Handler) InsertOrganizationMember(w http.ResponseWriter, r *http.Request) {
+	org := mux.Vars(r)["org"]
+
+	_, err := h.db.GetOrganizationByName(org)
+	if err != nil {
+		msg := fmt.Sprintf("Organization %v does not exist", org)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	member := orgAddition{}
+	err = httputil.UnmarshalRequestBody(r, &member)
+	if err != nil {
+		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.db.GetUserByUsername(member.Username)
+	if err != nil {
+		msg := fmt.Sprintf("User %v does not exist", member.Username)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	err = h.db.InsertOrgMember(user.Username, org, true)
+	if err != nil {
+		log.Printf("unable to insert user as member: %v", err)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 /* POST /organizations
