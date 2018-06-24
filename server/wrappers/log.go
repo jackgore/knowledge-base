@@ -28,6 +28,11 @@ func Log(handler http.Handler) http.Handler {
 		handler.ServeHTTP(lrw, r)
 		statusCode := lrw.statusCode
 
-		log.Printf("%v %v %v took %v seconds", statusCode, r.Method, r.URL.Path, time.Since(start).Seconds())
+		query := ""
+		if r.URL.RawQuery != "" {
+			query = "?" + r.URL.RawQuery
+		}
+
+		log.Printf("%v %v %v%v took %v seconds", statusCode, r.Method, r.URL.Path, query, time.Since(start).Seconds())
 	})
 }
