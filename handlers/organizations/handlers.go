@@ -86,8 +86,8 @@ func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request)
 
 	admins := false
 	if val, ok := params["admins"]; ok {
-		if admins, ok = val.(bool); !ok {
-			admins = false
+		if val == "true" {
+			admins = true
 		}
 	}
 

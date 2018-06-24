@@ -280,11 +280,11 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	var questions []question.Question
 	var err error
-	var id int
 
 	qparams := query.ParseParams(r)
 	if userVal, ok := qparams["user"]; ok {
-		if id, ok = userVal.(int); !ok {
+		id, err := strconv.Atoi(userVal)
+		if err != nil {
 			httputil.HandleError(w, errors.InvalidQueryParamError, http.StatusBadRequest)
 			return
 		}
