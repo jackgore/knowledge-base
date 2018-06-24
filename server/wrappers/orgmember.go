@@ -22,7 +22,12 @@ func (o *OrgMemberMiddleware) Initialize(m session.Manager, db storage.Driver) {
 }
 
 func (o *OrgMemberMiddleware) assertMember(w http.ResponseWriter, r *http.Request, f func(http.ResponseWriter, *http.Request), admin bool) {
+	// Allow path name to be either org or organization
 	org, ok := mux.Vars(r)["org"]
+	if !ok {
+		org, ok = mux.Vars(r)["organization"]
+	}
+
 	if !ok {
 		// Out of an abundance of caution this will return 401
 		log.Printf("Attempted to authorize a user for an organization endpoint but no org param was found")

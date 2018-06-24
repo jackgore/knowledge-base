@@ -107,7 +107,7 @@ func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, usernam
 		return m.GetSession(r)
 	}
 
-	log.Printf("No session cookie found for user :%v, creating one now", username)
+	log.Printf("No session cookie found for user: %v, creating one now", username)
 
 	sid := generateSessionID()
 	s := session.Session{SID: sid, Username: username, ExpiresOn: time.Now().Add(time.Duration(m.maxLifetime) * time.Second)}
