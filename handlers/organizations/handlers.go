@@ -112,7 +112,7 @@ func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request)
 	w.Write(contents)
 }
 
-/* POST /organizations/{org}/members
+/* POST /organizations/{organization}/members
  *
  * Adds the member to the organization
  *
@@ -122,7 +122,7 @@ func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request)
  * which should be handled by our middleware
  */
 func (h *Handler) InsertOrganizationMember(w http.ResponseWriter, r *http.Request) {
-	org := mux.Vars(r)["org"]
+	org := mux.Vars(r)["organization"]
 
 	_, err := h.db.GetOrganizationByName(org)
 	if err != nil {
