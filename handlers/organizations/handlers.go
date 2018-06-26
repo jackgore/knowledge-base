@@ -185,7 +185,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 
 	err = organization.Validate(org)
 	if err != nil {
-		httputil.HandleError(w, errors.CreateResourceError, http.StatusBadRequest)
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
