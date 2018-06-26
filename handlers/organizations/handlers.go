@@ -13,6 +13,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/query"
 	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/storage"
+	"github.com/JonathonGore/knowledge-base/util"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
@@ -141,6 +142,19 @@ func (h *Handler) InsertOrganizationMember(w http.ResponseWriter, r *http.Reques
 	user, err := h.db.GetUserByUsername(member.Username)
 	if err != nil {
 		msg := fmt.Sprintf("User %v does not exist", member.Username)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	// If user is already a member return a 400
+	members, err := h.db.GetOrganizationMembers(org, false)
+	if err != nil {
+		httputil.HandleError(w, "Internal server error", http.StatusBadRequest)
+		return
+	}
+
+	if util.Contains(members, user.Username) {
+		msg := fmt.Sprintf("User: %v is already a member of organization: %v", user.Username, org)
 		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
