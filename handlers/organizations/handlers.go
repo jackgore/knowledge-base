@@ -189,19 +189,21 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.GetOrganizationByName(org.Name)
+	o, err := h.db.GetOrganizationByName(org.Name)
 	if err == nil {
-		msg := fmt.Sprintf("Attempted to create organization %v but name already exists", org.Name)
+		msg := fmt.Sprintf("Organization %v already exists", o.Name)
 		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
+	} else {
+		log.Printf("Error: %v", err)
 	}
 
 	org.CreatedOn = time.Now()
 
 	id, err := h.db.InsertOrganization(org)
 	if err != nil {
-		log.Printf("Unable to insert organization into database: %v", err)
-		httputil.HandleError(w, errors.DBInsertError, http.StatusBadRequest)
+		log.Printf("Unable to insert organization %v into database: %v", org.Name, err)
+		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return
 	}
 
@@ -212,7 +214,7 @@ func (h *Handler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.db.InsertOrgMember(sess.Username, org.Name, true)
+	err = h.db.InsertOrgMember(sess.Username, org.Name, true) // Org creator is added as an admin
 	if err != nil {
 		log.Printf("unable to insert user as member: %v", err)
 		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)

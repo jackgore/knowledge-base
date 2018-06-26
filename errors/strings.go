@@ -5,7 +5,7 @@ const (
 	JSONError               = "Unable to convert into JSON"
 	CreateResourceError     = "Unable to create resource"
 	ResourceNotFoundError   = "Unable to find resource"
-	DBInsertError           = "Unable to insert into databse"
+	DBInsertError           = "Unable to insert into database"
 	DBUpdateError           = "Unable to update databse"
 	DBGetError              = "Unable to retrieve data from database"
 	InvalidPathParamError   = "Received bad bath paramater"
