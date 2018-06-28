@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/JonathonGore/knowledge-base/errors"
 	"github.com/JonathonGore/knowledge-base/models/team"
@@ -117,6 +118,7 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t.Organization = org.ID // Link the team to the org
+	t.CreatedOn = time.Now()
 
 	err = h.db.InsertTeam(t)
 	if err != nil {
