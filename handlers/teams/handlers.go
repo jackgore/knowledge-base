@@ -89,10 +89,23 @@ func (h *Handler) GetTeams(w http.ResponseWriter, r *http.Request) {
  * Note: Error messages here are user facing
  */
 func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
-	orgName, _ := mux.Vars(r)["organization"]
+	// TODO: In the future in would probably be good to be able allow only org admins to create teams
+
+	orgName, ok := mux.Vars(r)["organization"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		msg := "Must be logged in to create team"
+		httputil.HandleError(w, msg, http.StatusUnauthorized)
+		return
+	}
 
 	t := team.Team{}
-	err := httputil.UnmarshalRequestBody(r, &t)
+	err = httputil.UnmarshalRequestBody(r, &t)
 	if err != nil {
 		httputil.HandleError(w, errors.JSONParseError, http.StatusInternalServerError)
 		return
@@ -100,19 +113,20 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 
 	err = team.Validate(t)
 	if err != nil {
-		httputil.HandleError(w, errors.CreateResourceError, http.StatusBadRequest)
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
-		httputil.HandleError(w, errors.ResourceNotFoundError, http.StatusBadRequest)
+		msg := fmt.Sprintf("Organization %v does not exist", orgName)
+		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.GetTeamByName(orgName, t.Name)
 	if err == nil {
-		msg := fmt.Sprintf("Team with name %v within %v already exists", t.Name, orgName)
+		msg := fmt.Sprintf("%v already exists withn %v", t.Name, orgName)
 		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -123,6 +137,12 @@ func (h *Handler) CreateTeam(w http.ResponseWriter, r *http.Request) {
 	err = h.db.InsertTeam(t)
 	if err != nil {
 		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
+		return
+	}
+
+	err = h.db.InsertTeamMember(sess.Username, orgName, t.Name, true) // First user for team should be an admin
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
