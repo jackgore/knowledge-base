@@ -15,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// storage describes the interface methods required from an storage component
 type storage interface {
 	GetUser(userID int) (user.User, error)
 	GetUserByUsername(username string) (user.User, error)
@@ -22,6 +23,7 @@ type storage interface {
 	InsertUser(user user.User) error
 }
 
+// session describes the interface methods required from an session component
 type session interface {
 	GetSession(r *http.Request) (sess.Session, error)
 	HasSession(r *http.Request) bool
@@ -29,16 +31,17 @@ type session interface {
 	SessionDestroy(w http.ResponseWriter, r *http.Request) error
 }
 
+// Handler describes the http handler struct used for managing users data.
 type Handler struct {
 	db             storage
 	sessionManager session
 }
 
 // New creates a new users handler with the given storage
-// drive and session manager.
+// and session component.
 func New(d storage, sm session) (*Handler, error) {
 	if d == nil || sm == nil {
-		return nil, fmt.Errorf("storage drive and session manager must be not nil")
+		return nil, fmt.Errorf("storage driver and session manager must not be nil")
 	}
 
 	return &Handler{d, sm}, nil
@@ -102,7 +105,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK) // TODO this should be a JSON response
+	httputil.Success(w)
 }
 
 /* POST /login
@@ -169,7 +172,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(httputil.JSON(httputil.SuccessResponse{"Success", http.StatusOK}))
+	httputil.Success(w)
 }
 
 /* GET /profile
@@ -207,7 +210,11 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
  * Retrieves the user from the database with the given username
  */
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-	username := mux.Vars(r)["username"]
+	username, ok := mux.Vars(r)["username"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
 
 	log.Printf("Attempting to retrieve user with username: %v", username)
 

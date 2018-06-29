@@ -13,11 +13,7 @@ import (
 )
 
 const (
-	validUserID   = 1
-	invalidUserID = 2
-	emptyUserID   = 3
-
-	validUser          = `{"username": "jacky", "password": "password"}`
+	validUserJSON      = `{"username": "jacky", "password": "password"}`
 	noUsernameUser     = `{"username": "", "password": "password"}`
 	noPasswordUser     = `{"username": "jacky", "password": ""}`
 	invalidJSONUser    = `"username": "jacky", "password": "password"}`
@@ -34,7 +30,7 @@ var signupTests = []struct {
 	body string
 	code int
 }{
-	{validUser, 200},
+	{validUserJSON, 200},
 	{invalidJSONUser, 400},
 	{noUsernameUser, 400},
 	{noPasswordUser, 400},

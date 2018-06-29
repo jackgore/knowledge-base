@@ -9,6 +9,12 @@ import (
 	"runtime"
 )
 
+// Success is a utility function to write a JSON response
+// indicating a successful operation.
+func Success(w http.ResponseWriter) {
+	w.Write(JSON(SuccessResponse{Message: "success", Code: 200}))
+}
+
 // HandleError is a utility function to responsd to a response writer with
 // the given message and error code as well as log the message
 func HandleError(w http.ResponseWriter, message string, code int) {

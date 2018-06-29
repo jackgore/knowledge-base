@@ -9,6 +9,23 @@ import (
 	sess "github.com/JonathonGore/knowledge-base/session"
 )
 
+// These constants determine which values are returned by mock functions.
+const (
+	validUserID   = 1
+	invalidUserID = 2
+	emptyUserID   = 3
+
+	validUsername = "Jack"
+)
+
+var (
+	validUser = user.User{
+		Username: validUsername,
+		Password: "",
+	}
+)
+
+// MockSession is a mock implementation of the mock session component used by the users handler.
 type MockSession struct{}
 
 func (m *MockSession) GetSession(r *http.Request) (sess.Session, error) {
@@ -31,6 +48,7 @@ func (m *MockSession) SessionDestroy(w http.ResponseWriter, r *http.Request) err
 	return nil
 }
 
+// MockStorage is a mock implementation of the mock storage component used by the users handler.
 type MockStorage struct{}
 
 func (m *MockStorage) GetUserOrganizations(uid int) ([]organization.Organization, error) {
@@ -55,11 +73,19 @@ func (m *MockStorage) InsertUser(user user.User) error {
 func (m *MockStorage) GetUser(userID int) (user.User, error) {
 	var u user.User
 
-	return u, nil
+	if userID == validUserID {
+		return validUser, nil
+	}
+
+	return u, errors.New("invalid userid")
 }
 
 func (m *MockStorage) GetUserByUsername(username string) (user.User, error) {
 	var u user.User
 
-	return u, errors.New("error")
+	if username == validUsername {
+		return validUser, nil
+	}
+
+	return u, errors.New("invalid username")
 }
