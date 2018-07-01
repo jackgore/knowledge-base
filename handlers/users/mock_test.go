@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/JonathonGore/knowledge-base/creds"
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	sess "github.com/JonathonGore/knowledge-base/session"
@@ -15,7 +16,8 @@ const (
 	invalidUserID = 2
 	emptyUserID   = 3
 
-	validUsername = "Jack"
+	validUsername = "jacky"
+	validPassword = "password"
 )
 
 var (
@@ -80,11 +82,19 @@ func (m *MockStorage) GetUser(userID int) (user.User, error) {
 	return u, errors.New("invalid userid")
 }
 
+// This function must mimick the behaviour of stored passwords which are hashed with bcrypt.
 func (m *MockStorage) GetUserByUsername(username string) (user.User, error) {
 	var u user.User
 
 	if username == validUsername {
-		return validUser, nil
+		u = validUser
+		hash, err := creds.HashPassword(u.Password)
+		if err != nil {
+			return u, nil
+		}
+
+		u.Password = hash
+		return u, nil
 	}
 
 	return u, errors.New("invalid username")

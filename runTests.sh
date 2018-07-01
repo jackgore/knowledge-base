@@ -1,10 +1,12 @@
 #!/bin/bash
 
-PSQL_SERVICE=PostgreSQL
+PSQL_SERVICE=postgresql
 COMPOSE_FILE=docker-compose.yml
 DATABASE_NAME=test
 CONFIG_FILE=config.test.yml
-KB_HOST=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | cut -d\  -f2)
+
+# TODO change this to not be fragile as it relies on having an internet connection.
+KB_HOST=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | cut -d\  -f2) 
 
 # Install our project and output any errors
 echo -n 'Building project...'

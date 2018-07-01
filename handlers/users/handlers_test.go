@@ -2,6 +2,7 @@ package users
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	validUserJSON      = `{"username": "jacky", "password": "password"}`
+	validSignupUser    = `{"username": "Jacky", "password": "password"}`
+	validLoginUser     = `{"username": "jacky", "password": "password"}`
 	noUsernameUser     = `{"username": "", "password": "password"}`
 	noPasswordUser     = `{"username": "jacky", "password": ""}`
 	invalidJSONUser    = `"username": "jacky", "password": "password"}`
@@ -30,7 +32,7 @@ var signupTests = []struct {
 	body string
 	code int
 }{
-	{validUserJSON, 200},
+	{validSignupUser, 200},
 	{invalidJSONUser, 400},
 	{noUsernameUser, 400},
 	{noPasswordUser, 400},
@@ -42,6 +44,7 @@ var loginTests = []struct {
 	body string
 	code int
 }{
+	{validLoginUser, 200},
 	{invalidJSONUser, 400},
 	{noUsernameUser, 400},
 	{noPasswordUser, 400},
@@ -86,8 +89,11 @@ func TestSignup(t *testing.T) {
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, r)
 
+		content, _ := ioutil.ReadAll(w.Body)
+
 		if test.code != w.Code {
 			t.Errorf("Received status code: %v Expected: %v for body: %v", w.Code, test.code, test.body)
+			fmt.Printf("Body: %v\n", string(content))
 		}
 	}
 }
