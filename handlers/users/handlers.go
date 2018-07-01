@@ -70,36 +70,43 @@ func (h *Handler) getUserOrgNames(id int) ([]string, error) {
  * Note: Error messages here are user facing
  */
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
-	user := user.User{}
-	err := httputil.UnmarshalRequestBody(r, &user)
+	u := user.User{}
+	err := httputil.UnmarshalRequestBody(r, &u)
 	if err != nil {
 		httputil.HandleError(w, errors.JSONParseError, http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("Received the following user to signup: %v", user.SafePrint())
+	log.Printf("Received the following user to signup: %v", u.SafePrint())
 
-	if err = creds.ValidateSignupCredentials(user.Username, user.Password); err != nil {
+	if err := user.Validate(u); err != nil {
 		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, err = h.db.GetUserByUsername(user.Username)
+	// Validate signup credentials is done here instead of user.Validate - as
+	// this is the only time we can validate the plain text password.
+	if err = creds.ValidateSignupCredentials(u.Username, u.Password); err != nil {
+		httputil.HandleError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err = h.db.GetUserByUsername(u.Username)
 	if err == nil {
-		msg := fmt.Sprintf("User with username %v already exists", user.Username)
+		msg := fmt.Sprintf("User with username %v already exists", u.Username)
 		httputil.HandleError(w, msg, http.StatusBadRequest)
 		return
 	}
 
-	user.Password, err = creds.HashPassword(user.Password)
+	u.Password, err = creds.HashPassword(u.Password)
 	if err != nil {
 		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
-	user.JoinedOn = time.Now()
+	u.JoinedOn = time.Now()
 
-	err = h.db.InsertUser(user)
+	err = h.db.InsertUser(u)
 	if err != nil {
 		httputil.HandleError(w, errors.DBInsertError, http.StatusInternalServerError)
 		return

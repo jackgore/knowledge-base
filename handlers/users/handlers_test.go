@@ -14,13 +14,20 @@ import (
 )
 
 const (
-	validSignupUser    = `{"username": "Jacky", "password": "password"}`
-	validLoginUser     = `{"username": "jacky", "password": "password"}`
-	noUsernameUser     = `{"username": "", "password": "password"}`
-	noPasswordUser     = `{"username": "jacky", "password": ""}`
-	invalidJSONUser    = `"username": "jacky", "password": "password"}`
-	spacesUsernameUser = `{"username": "jacky jacky", "password": "password"}`
-	shortPasswordUser  = `{"username": "jacky jacky", "password": "x"}`
+	validSignup          = `{"username": "Jacky", "password": "password", "email": "test@test.com"}`
+	spacesUsername       = `{"username": "jacky jacky", "password": "password", "email": "test@test.com"}`
+	invalidJSONSignup    = `"username": "jacky", "password": "password", "email": "test@test.com"}`
+	noUsernameSignup     = `{"username": "", "password": "password", "email": "test@test.com"}`
+	noPasswordSignup     = `{"username": "jacky", "password": "", "email": "test@test.com"}`
+	shortPasswordSignup  = `{"username": "jacky", "password": "x", "email": "test@test.com"}`
+	noEmailSignup        = `{"username": "Jacky", "password": "password"}`
+	emptyEmailSignup     = `{"username": "Jacky", "password": "password", "email": ""}`
+	malformedEmailSignup = `{"username": "Jacky", "password": "password", "email": "bad email"}`
+
+	validLogin       = `{"username": "jacky", "password": "password"}`
+	invalidJSONLogin = `"username": "jacky", "password": "password"}`
+	noUsernameLogin  = `{"username": "", "password": "password"}`
+	noPasswordLogin  = `{"username": "jacky", "password": ""}`
 )
 
 var (
@@ -32,28 +39,32 @@ var signupTests = []struct {
 	body string
 	code int
 }{
-	{validSignupUser, 200},
-	{invalidJSONUser, 400},
-	{noUsernameUser, 400},
-	{noPasswordUser, 400},
-	{spacesUsernameUser, 400},
-	{shortPasswordUser, 400},
+	{validSignup, 200},          // Signing up a user with valid credentials should succeed
+	{spacesUsername, 400},       // Usernames cannot contian spaces
+	{invalidJSONSignup, 400},    // Non JSON should cause a 400, bad request
+	{noUsernameSignup, 400},     // Signup credentials without a username provided should fail
+	{noPasswordSignup, 400},     // Signup credentials without a password should fail
+	{shortPasswordSignup, 400},  // Password cannot be too short
+	{noEmailSignup, 400},        // No email in signup should fail
+	{emptyEmailSignup, 400},     // Empty email in signup should fail
+	{malformedEmailSignup, 400}, // Malformed email in signup should fail
 }
 
 var loginTests = []struct {
 	body string
 	code int
 }{
-	{validLoginUser, 200},
-	{invalidJSONUser, 400},
-	{noUsernameUser, 400},
-	{noPasswordUser, 400},
+	{validLogin, 200},       // Should be able to login a user with valid credentials
+	{invalidJSONLogin, 400}, // Invalid JSON should cause a bad request
+	{noUsernameLogin, 400},  // No username should cause a bad request
+	{noPasswordLogin, 400},  // No password should cause a bad request
 }
 
 func init() {
 	log.SetOutput(ioutil.Discard)
 
 	handler = Handler{&MockStorage{}, &MockSession{}}
+
 	router = mux.NewRouter()
 	router.HandleFunc("/signup", handler.Signup).Methods(http.MethodPost)
 	router.HandleFunc("/login", handler.Login).Methods(http.MethodPost)
