@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JonathonGore/knowledge-base/config"
 	"github.com/JonathonGore/knowledge-base/models/answer"
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/question"
@@ -669,9 +670,9 @@ func connect(db *sql.DB, retries int) {
 }
 
 // New consumes an sql.Config object and creates a new postgres driver.
-func New(config Config) (*driver, error) {
+func New(conf config.DBConfig) (*driver, error) {
 	dbinfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, 5432, config.Username, config.Password, config.DatabaseName)
+		conf.Host, 5432, conf.User, conf.Password, conf.Name)
 
 	db, err := sql.Open("postgres", dbinfo)
 	if err != nil {

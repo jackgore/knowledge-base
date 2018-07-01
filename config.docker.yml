@@ -1,9 +1,5 @@
 ---
-server:
-    port: 3001
-ssl:
-    certificate: 'server.crt'
-    key: 'server.key'
+port: 3001
 database:
     host: 'postgresql'
     name: 'kbase'

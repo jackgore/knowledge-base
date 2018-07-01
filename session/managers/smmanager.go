@@ -29,9 +29,17 @@ type SMManager struct {
 	db               storage.Driver
 }
 
-// Creates a new session manager based on the given paramaters
-func NewSMManager(cookieName string, maxlifetime int64, db storage.Driver) (*SMManager, error) {
-	return &SMManager{cookieName: cookieName, publicCookieName: "kb-public", maxLifetime: maxlifetime, sessionMap: sync.Map{}, db: db}, nil
+// NewSMManager creates a new session manager based on the given paramaters
+func NewSMManager(cookieName, publicCookieName string, maxlifetime int64, db storage.Driver) (*SMManager, error) {
+	sm := &SMManager{
+		cookieName:       cookieName,
+		publicCookieName: publicCookieName,
+		maxLifetime:      maxlifetime,
+		sessionMap:       sync.Map{},
+		db:               db,
+	}
+
+	return sm, nil
 }
 
 /*
