@@ -48,6 +48,23 @@
   }
 },
 {
+  "description": "prevent bad email on signup",
+  "method": "post",
+  "endpoint": "/users",
+  "request": {
+    "json": {
+       "username": "Jackv2",
+       "password": "password",
+       "email": "",
+       "first_name": "Jack",
+       "last_name": "Gore"
+    }
+  },
+  "response": {
+    "code": 400
+  }
+},
+{
   "description": "ensure bad users dont get signed up",
   "method": "get",
   "endpoint": "/users/Jackv2",

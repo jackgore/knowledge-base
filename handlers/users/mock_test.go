@@ -18,10 +18,14 @@ const (
 
 	validUsername = "jacky"
 	validPassword = "password"
+
+	testCookieName   = "kb-test-cookie"
+	validCookieValue = "valid cookie"
 )
 
 var (
 	validUser = user.User{
+		ID:       validUserID,
 		Username: validUsername,
 		Password: "",
 	}
@@ -30,8 +34,20 @@ var (
 // MockSession is a mock implementation of the mock session component used by the users handler.
 type MockSession struct{}
 
+// GetSession retrieves a session based on the attached cookie.
 func (m *MockSession) GetSession(r *http.Request) (sess.Session, error) {
 	var s sess.Session
+
+	c, err := r.Cookie(testCookieName)
+	if err != nil {
+		return s, errors.New("No cookie attached")
+	}
+
+	if c.Value != validCookieValue {
+		return s, errors.New("Invalid cookie value")
+	}
+
+	s.Username = validUsername
 
 	return s, nil
 }
@@ -46,7 +62,18 @@ func (m *MockSession) SessionStart(w http.ResponseWriter, r *http.Request, usern
 	return s, nil
 }
 
+// Session destroy mocks the session destroy function. Returns an error if the
+// value of the attached cookie is not valid.
 func (m *MockSession) SessionDestroy(w http.ResponseWriter, r *http.Request) error {
+	c, err := r.Cookie(testCookieName)
+	if err != nil {
+		return errors.New("No cookie attached")
+	}
+
+	if c.Value != validCookieValue {
+		return errors.New("Invalid cookie value")
+	}
+
 	return nil
 }
 

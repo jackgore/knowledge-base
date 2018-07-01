@@ -215,6 +215,8 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 /* GET /users/{username}
  *
  * Retrieves the user from the database with the given username
+ *
+ * Note: Right now we do not require any authorization for users.
  */
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	username, ok := mux.Vars(r)["username"]

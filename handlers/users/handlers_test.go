@@ -2,6 +2,7 @@ package users
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/gorilla/mux"
 )
 
@@ -60,6 +62,34 @@ var loginTests = []struct {
 	{noPasswordLogin, 400},  // No password should cause a bad request
 }
 
+var logoutTests = []struct {
+	sessionCookie string
+	code          int
+}{
+	{validCookieValue, 200}, // Valid cookie value should be able to logout
+	{"", 500},               // No cookie value should fail
+	{"cookie", 500},         // Invalid cookie value should fail
+}
+
+var getProfileTests = []struct {
+	sessionCookie string
+	code          int
+	u             user.User
+}{
+	{validCookieValue, 200, validUser}, // Valid cookie value should be able to logout
+	{"", 401, user.User{}},             // No cookie value should fail
+	{"cookie", 401, user.User{}},       // Invalid cookie value should fail
+}
+
+var getUserTests = []struct {
+	username string
+	code     int
+	u        user.User
+}{
+	{validUsername, 200, validUser},        // Valid cookie value should be able to logout
+	{"invalid username", 404, user.User{}}, // No cookie value should fail
+}
+
 func init() {
 	log.SetOutput(ioutil.Discard)
 
@@ -68,6 +98,16 @@ func init() {
 	router = mux.NewRouter()
 	router.HandleFunc("/signup", handler.Signup).Methods(http.MethodPost)
 	router.HandleFunc("/login", handler.Login).Methods(http.MethodPost)
+	router.HandleFunc("/logout", handler.Logout).Methods(http.MethodPost)
+	router.HandleFunc("/profile", handler.GetProfile).Methods(http.MethodGet)
+	router.HandleFunc("/users/{username}", handler.GetUser).Methods(http.MethodGet)
+}
+
+func TestNew(t *testing.T) {
+	_, err := New(nil, nil)
+	if err == nil {
+		t.Errorf("Expected to receive error when passing nil interfaces")
+	}
 }
 
 func TestGetUserOrgNames(t *testing.T) {
@@ -125,9 +165,76 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestNew(t *testing.T) {
-	_, err := New(nil, nil)
-	if err == nil {
-		t.Errorf("Expected to receive error when passing nil interfaces")
+func TestLogout(t *testing.T) {
+	for _, test := range logoutTests {
+		r, err := http.NewRequest(http.MethodPost, "/logout", nil)
+		if err != nil {
+			t.Errorf("unexepceted error when creating request %v", err)
+		}
+
+		r.Header.Set("Cookie", fmt.Sprintf("%v=%v", testCookieName, test.sessionCookie))
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v for logout", w.Code, test.code)
+		}
+	}
+}
+
+func TestGetProfile(t *testing.T) {
+	for _, test := range getProfileTests {
+		r, err := http.NewRequest(http.MethodGet, "/profile", nil)
+		if err != nil {
+			t.Errorf("unexpected error when creating request %v", err)
+		}
+
+		r.Header.Set("Cookie", fmt.Sprintf("%v=%v", testCookieName, test.sessionCookie))
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v for logout", w.Code, test.code)
+		}
+
+		contents, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Errorf("unexpected error when creating request %v", err)
+		}
+
+		var u user.User
+		err = json.Unmarshal(contents, &u)
+		if err != nil {
+			t.Errorf("unexpected error when parsing user %v", err)
+		}
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	for _, test := range getUserTests {
+		r, err := http.NewRequest(http.MethodGet, "/users/"+test.username, nil)
+		if err != nil {
+			t.Errorf("unexpected error when creating request %v", err)
+		}
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v for logout", w.Code, test.code)
+		}
+
+		contents, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Errorf("unexpected error when creating request %v", err)
+		}
+
+		var u user.User
+		err = json.Unmarshal(contents, &u)
+		if err != nil {
+			t.Errorf("unexpected error when parsing user %v", err)
+		}
 	}
 }
