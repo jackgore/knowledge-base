@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	DefaultDBHost     = "0.0.0.0"
-	DefaultDBName     = "kbase"
-	DefaultDBUser     = "kbase"
-	DefaultDBPassword = "password"
-	DefaultPort       = 3001
+	DefaultCookieName       = "knowledge_base"
+	DefaultPublicCookieName = "kb-public"
+	DefaultCookieDuration   = 3600 * 24 * 365
+	DefaultDBHost           = "0.0.0.0"
+	DefaultDBName           = "kbase"
+	DefaultDBUser           = "kbase"
+	DefaultDBPassword       = "password"
+	DefaultPort             = 3001
 )
 
 type DBConfig struct {
@@ -22,20 +25,26 @@ type DBConfig struct {
 }
 
 type Config struct {
-	Database DBConfig `yaml:"database"`
-	Port     int      `yaml:"port"`
+	CookieName       string   `yaml:"cookie-name"`
+	PublicCookieName string   `yaml:"public-cookie-name"`
+	CookieDuration   int64    `yaml:"cookie-duration"`
+	Port             int      `yaml:"port"`
+	Database         DBConfig `yaml:"database"`
 }
 
 // DefaultConfig builds a Config object using all the default values.
 func DefaultConfig() Config {
 	return Config{
+		CookieDuration: DefaultCookieDuration,
+		CookieName:     DefaultCookieName,
 		Database: DBConfig{
 			Name:     DefaultDBName,
 			User:     DefaultDBUser,
 			Password: DefaultDBPassword,
 			Host:     DefaultDBHost,
 		},
-		Port: DefaultPort,
+		Port:             DefaultPort,
+		PublicCookieName: DefaultPublicCookieName,
 	}
 }
 

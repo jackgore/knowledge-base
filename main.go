@@ -16,12 +16,6 @@ import (
 	"github.com/JonathonGore/knowledge-base/storage/sql"
 )
 
-const (
-	cookieName       = "knowledge_base"
-	publicCookieName = "kb-public"
-	cookieDuration   = 3600 * 24 * 365
-)
-
 func main() {
 	confFile := flag.String("config", "config.yml", "specify the config file to use")
 	flag.Parse()
@@ -42,7 +36,7 @@ func main() {
 		log.Fatalf("unable to create sql driver: %v", err)
 	}
 
-	sm, err := managers.NewSMManager(cookieName, publicCookieName, cookieDuration, d)
+	sm, err := managers.NewSMManager(conf.CookieName, conf.PublicCookieName, conf.CookieDuration, d)
 	if err != nil {
 		log.Fatalf("unable to create session manager: %v", err)
 	}
