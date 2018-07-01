@@ -46,7 +46,7 @@ func main() {
 		log.Fatalf("unable to create handler: %v", err)
 	}
 
-	s, err := server.New(api, sm, d)
+	s, err := server.New(api, sm, d, conf.AllowPublicQuestions)
 	if err != nil {
 		log.Fatalf("error initializing server: %v", err)
 	}

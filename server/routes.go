@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/handlers"
@@ -14,7 +15,13 @@ type Server struct {
 	Router *mux.Router
 }
 
-func New(api handlers.API, sm session.Manager, db storage.Driver) (*Server, error) {
+func isPublicHandler(allowPublic bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf(`{"allow-public": %v}`, allowPublic)))
+	}
+}
+
+func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bool) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
 	l := wrappers.LoggedInMiddleware{}
@@ -26,9 +33,15 @@ func New(api handlers.API, sm session.Manager, db storage.Driver) (*Server, erro
 	o := wrappers.OrgMemberMiddleware{}
 	o.Initialize(sm, db)
 
-	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
-	s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
-	s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+	s.Router.HandleFunc("/public", isPublicHandler(allowPublic))
+
+	if allowPublic {
+		// Only allow public questions if configured to do so
+		s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+		s.Router.HandleFunc("/questions", api.GetQuestions).Methods(http.MethodGet)
+		s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
+	}
+
 	s.Router.HandleFunc("/questions/{id}/answers", api.SubmitAnswer).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}/answers", api.GetAnswers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)

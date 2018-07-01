@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	DefaultAllowPublic      = true
 	DefaultCookieName       = "knowledge_base"
 	DefaultPublicCookieName = "kb-public"
 	DefaultCookieDuration   = 3600 * 24 * 365
@@ -25,18 +26,20 @@ type DBConfig struct {
 }
 
 type Config struct {
-	CookieName       string   `yaml:"cookie-name"`
-	PublicCookieName string   `yaml:"public-cookie-name"`
-	CookieDuration   int64    `yaml:"cookie-duration"`
-	Port             int      `yaml:"port"`
-	Database         DBConfig `yaml:"database"`
+	AllowPublicQuestions bool     `yaml:"allow-public-questions"`
+	CookieName           string   `yaml:"cookie-name"`
+	PublicCookieName     string   `yaml:"public-cookie-name"`
+	CookieDuration       int64    `yaml:"cookie-duration"`
+	Port                 int      `yaml:"port"`
+	Database             DBConfig `yaml:"database"`
 }
 
 // DefaultConfig builds a Config object using all the default values.
 func DefaultConfig() Config {
 	return Config{
-		CookieDuration: DefaultCookieDuration,
-		CookieName:     DefaultCookieName,
+		AllowPublicQuestions: DefaultAllowPublic,
+		CookieDuration:       DefaultCookieDuration,
+		CookieName:           DefaultCookieName,
 		Database: DBConfig{
 			Name:     DefaultDBName,
 			User:     DefaultDBUser,
