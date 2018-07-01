@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/session"
@@ -29,10 +28,8 @@ func (o *OrgMemberMiddleware) assertMember(w http.ResponseWriter, r *http.Reques
 	}
 
 	if !ok {
-		// Out of an abundance of caution this will return 401
-		log.Printf("Attempted to authorize a user for an organization endpoint but no org param was found")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(httputil.JSON(message{"unauthorized"}))
+		w.Write(httputil.JSON(httputil.ErrorResponse{"unauthorized", http.StatusUnauthorized}))
 		return
 	}
 
@@ -40,14 +37,17 @@ func (o *OrgMemberMiddleware) assertMember(w http.ResponseWriter, r *http.Reques
 	sess, err := o.m.GetSession(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(httputil.JSON(message{"you must be logged in to perform this action"}))
+		w.Write(httputil.JSON(httputil.ErrorResponse{
+			"must be logged in to perform this action",
+			http.StatusUnauthorized,
+		}))
 		return
 	}
 
 	members, err := o.db.GetOrganizationMembers(org, admin)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(httputil.JSON(message{"internal server error"}))
+		w.Write(httputil.JSON(httputil.ErrorResponse{"internal server error", http.StatusInternalServerError}))
 		return
 	}
 
@@ -65,11 +65,13 @@ func (o *OrgMemberMiddleware) assertMember(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusUnauthorized)
-	w.Write(httputil.JSON(message{fmt.Sprintf("you must be a %v of the %v organization to perform this action", memberText, org)}))
-
+	w.Write(httputil.JSON(httputil.ErrorResponse{
+		fmt.Sprintf("you must be a %v of the %v organization to perform this action", memberText, org),
+		http.StatusUnauthorized,
+	}))
 }
 
-// Ensures that the incoming request belongs to a user who is an admin of the
+// OrgAdmin ensures that the incoming request belongs to a user who is an admin of the
 // org in the path param of the request.
 func (o *OrgMemberMiddleware) OrgAdmin(f func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +79,7 @@ func (o *OrgMemberMiddleware) OrgAdmin(f func(http.ResponseWriter, *http.Request
 	}
 }
 
-// Ensures that the incoming request belongs to a user who is a member of the
+// OrgMember ensures that the incoming request belongs to a user who is a member of the
 // org in the path param of the request.
 func (o *OrgMemberMiddleware) OrgMember(f func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

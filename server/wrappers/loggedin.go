@@ -1,34 +1,29 @@
 package wrappers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/session"
+	"github.com/JonathonGore/knowledge-base/util/httputil"
 )
 
 type LoggedInMiddleware struct {
 	m session.Manager
 }
 
+// Initialize the provided logged in middleware with a session manager.
 func (l *LoggedInMiddleware) Initialize(m session.Manager) {
 	l.m = m
 }
 
+// LogginIn ensures that the requesting user is logged in to perform the requested operation.
 func (l *LoggedInMiddleware) LoggedIn(f func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Ensure there is a session cookie attached to the request
-		_, err := l.m.GetSession(r)
-		if err != nil {
+		if _, err := l.m.GetSession(r); err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-
-			// TODO: Currently the JSON function is in handlers package - need to do some refactoring
-			// to make that in its own util package
-
-			w.Write([]byte(fmt.Sprintf("{\"message\": \"unauthorized\"}")))
-			return
+			w.Write(httputil.JSON(httputil.ErrorResponse{"unauthorized", http.StatusUnauthorized}))
+		} else {
+			f(w, r) // Proceed down the call chain
 		}
-
-		f(w, r) // Proceed down the call chain
 	}
 }
