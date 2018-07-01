@@ -17,6 +17,7 @@ import (
 
 // storage describes the interface methods required from an storage component
 type storage interface {
+	DeleteUserByUsername(uname string) error
 	GetUser(userID int) (user.User, error)
 	GetUserByUsername(username string) (user.User, error)
 	GetUserOrganizations(uid int) ([]organization.Organization, error)
@@ -174,6 +175,32 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
  */
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := h.sessionManager.SessionDestroy(w, r)
+	if err != nil {
+		httputil.HandleError(w, errors.LogoutFailedError, http.StatusInternalServerError)
+		return
+	}
+
+	httputil.Success(w)
+}
+
+/* DELETE /users/{username}
+ *
+ * Deletes the user from the system.
+ */
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	uname, ok := mux.Vars(r)["username"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	err := h.sessionManager.SessionDestroy(w, r)
+	if err != nil {
+		httputil.HandleError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.db.DeleteUserByUsername(uname)
 	if err != nil {
 		httputil.HandleError(w, errors.LogoutFailedError, http.StatusInternalServerError)
 		return

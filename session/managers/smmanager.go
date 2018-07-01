@@ -131,7 +131,6 @@ func (m *SMManager) SessionStart(w http.ResponseWriter, r *http.Request, usernam
 func (m *SMManager) SessionDestroy(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie(m.cookieName)
 	if err != nil || cookie.Value == "" {
-		log.Printf("Received request to delete non-existant session")
 		return nil
 	}
 

@@ -37,6 +37,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver) (*Server, erro
 
 	s.Router.HandleFunc("/users", api.Signup).Methods(http.MethodPost)
 	s.Router.HandleFunc("/users/{username}", api.GetUser).Methods(http.MethodGet)
+	s.Router.HandleFunc("/users/{username}", api.DeleteUser).Methods(http.MethodDelete)
 	s.Router.HandleFunc("/profile", api.GetProfile).Methods(http.MethodGet)
 	s.Router.HandleFunc("/login", api.Login).Methods(http.MethodPost)
 	s.Router.HandleFunc("/logout", api.Logout).Methods(http.MethodPost)

@@ -99,6 +99,10 @@ func (m *MockStorage) InsertUser(user user.User) error {
 	return nil
 }
 
+func (m *MockStorage) DeleteUserByUsername(username string) error {
+	return nil
+}
+
 func (m *MockStorage) GetUser(userID int) (user.User, error) {
 	var u user.User
 

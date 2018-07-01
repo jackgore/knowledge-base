@@ -17,11 +17,12 @@ type API interface {
 	SubmitTeamQuestion(w http.ResponseWriter, r *http.Request)
 	SubmitOrgQuestion(w http.ResponseWriter, r *http.Request)
 
-	Signup(w http.ResponseWriter, r *http.Request)
+	DeleteUser(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
 	GetProfile(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	Logout(w http.ResponseWriter, r *http.Request)
+	Signup(w http.ResponseWriter, r *http.Request)
 
 	CreateOrganization(w http.ResponseWriter, r *http.Request)
 	GetOrganizations(w http.ResponseWriter, r *http.Request)

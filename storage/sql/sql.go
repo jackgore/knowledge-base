@@ -328,6 +328,40 @@ func (d *driver) InsertUser(user user.User) error {
 	return nil
 }
 
+// DeleteUser deletes the user with the given username from the database.
+func (d *driver) DeleteUserByUsername(uname string) error {
+	u, err := d.GetUserByUsername(uname)
+	if err != nil {
+		return err
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Delete user from all orgs and teams
+	_, err = tx.Exec("DELETE FROM member_of WHERE user_id=$1", u.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM member_of_team WHERE user_id=$1", u.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM users WHERE id=$1", u.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 /* Attempts to retrieve the user with the given username from the database.
  * Usually used when attempting to see if a username is attached to a user.
  */
