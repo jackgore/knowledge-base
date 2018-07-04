@@ -4,18 +4,18 @@ import (
 	"testing"
 )
 
-var validateNameTests = []struct{
-	name string
+var validateNameTests = []struct {
+	name  string
 	valid bool
 }{
 	{"organization", true},
-	{"organizationorganizationorganizationorganizationorganizationorganization"+
+	{"organizationorganizationorganizationorganizationorganizationorganization" +
 		"organizationorganizationorganizationorganization", false},
 	{"spaces org", false},
 	{"", false},
 }
 
-func TestValidateName(t * testing.T) {
+func TestValidateName(t *testing.T) {
 	for _, test := range validateNameTests {
 		if (validateName(test.name) == nil) != test.valid {
 			t.Errorf("Received incorrect result for organization name: %v", test.name)

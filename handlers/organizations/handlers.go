@@ -40,7 +40,7 @@ func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 	var (
 		orgs []organization.Organization
-		err error
+		err  error
 	)
 
 	params := query.ParseParams(r)
