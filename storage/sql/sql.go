@@ -20,7 +20,7 @@ import (
 
 const (
 	MaxRetries = 3
-	RetryDelay = 10 // 5 second delay between retrying db connection
+	RetryDelay = 10 // delay between retrying db connection
 )
 
 type driver struct {
@@ -96,10 +96,11 @@ func (d *driver) GetOrganizationByName(name string) (organization.Organization, 
 	return org, nil
 }
 
-/* Gets a page of organizations from the database
- */
+// Gets a page of organizations from the database for the given user id
 func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, error) {
-	rows, err := d.db.Query("SELECT id, name, created_on, is_public"+
+	rows, err := d.db.Query("SELECT id, name, created_on, is_public,"+
+		" (SELECT count(*) FROM member_of WHERE id=org_id)," +
+		" (SELECT count(*) FROM team WHERE team.org_id=organization.id)" +
 		" FROM organization JOIN member_of ON (id=member_of.org_id)"+
 		" WHERE member_of.user_id=$1 order by name", uid)
 	if err != nil {
@@ -110,7 +111,7 @@ func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, err
 	orgs := make([]organization.Organization, 0)
 	for rows.Next() {
 		org := organization.Organization{}
-		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
+		err := rows.Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic, &org.MemberCount, &org.TeamCount)
 		if err != nil {
 			log.Printf("Received error scanning in data from database: %v", err)
 			continue
@@ -144,6 +145,16 @@ func (d *driver) GetOrganizations() ([]organization.Organization, error) {
 	}
 
 	return orgs, err
+}
+
+// GetUserOrganizations retrieves a page of organizations from the database for the provided user.
+func (d *driver) GetUsernameOrganizations(username string) ([]organization.Organization, error) {
+	user, err := d.GetUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+
+	return d.GetUserOrganizations(user.ID)
 }
 
 // GetOrganizationMembers retrieves a list of member usernames from the given organization.

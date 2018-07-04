@@ -11,26 +11,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var (
+	l = wrappers.LoggedInMiddleware{}
+	u = wrappers.IsUserMiddleware{}
+	o = wrappers.OrgMemberMiddleware{}
+)
+
 type Server struct {
 	Router *mux.Router
 }
 
+// isPublicHandler consumes the allowPublic configuration variable and determines
+// if we should expose routes for manipulating public questions.
 func isPublicHandler(allowPublic bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf(`{"allow-public": %v}`, allowPublic)))
 	}
 }
 
+// New creates a new server with routes from the provided api.
 func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bool) (*Server, error) {
 	s := &Server{Router: mux.NewRouter()}
 
-	l := wrappers.LoggedInMiddleware{}
 	l.Initialize(sm)
-
-	u := wrappers.IsUserMiddleware{}
 	u.Initialize(sm)
-
-	o := wrappers.OrgMemberMiddleware{}
 	o.Initialize(sm, db)
 
 	s.Router.HandleFunc("/public", isPublicHandler(allowPublic))
@@ -68,7 +72,6 @@ func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bo
 	s.Router.HandleFunc("/organizations/{organization}/teams", o.OrgMember(api.CreateTeam)).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.GetTeams).Methods(http.MethodGet)
 
-	// Attach middleware to mux router
 	s.Router.Use(wrappers.Log)
 	s.Router.Use(wrappers.JSONResponse) // All of our routes should return JSON
 

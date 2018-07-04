@@ -28,6 +28,7 @@ type orgAddition struct {
 	Admin    bool   `json:"admin"`
 }
 
+// New creates a new handler for handling requests concerning organizations.
 func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 	return &Handler{d, sm}, nil
 }
@@ -35,10 +36,22 @@ func New(d storage.Driver, sm session.Manager) (*Handler, error) {
 /* GET /organizations
  *
  * Receives a page of organizations
- * TODO: accept query params
  */
 func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
-	orgs, err := h.db.GetOrganizations()
+	var (
+		orgs []organization.Organization
+		err error
+	)
+
+	params := query.ParseParams(r)
+
+	username, ok := params["username"]
+	if ok {
+		orgs, err = h.db.GetUsernameOrganizations(username)
+	} else {
+		orgs, err = h.db.GetOrganizations()
+	}
+
 	if err != nil {
 		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
 		return
@@ -55,11 +68,16 @@ func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
 
 /* GET /organization/{organization}
  *
- * Receives a single organization
- * TODO: accept query params
+ * Retrieves the organization with the provided name.
+ *
+ * TODO: Require the requester to be a member of the organization or the org to be public.
  */
 func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
-	orgName := mux.Vars(r)["organization"]
+	orgName, ok := mux.Vars(r)["organization"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
 
 	org, err := h.db.GetOrganizationByName(orgName)
 	if err != nil {
@@ -82,7 +100,12 @@ func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
  * TODO: accept query params
  */
 func (h *Handler) GetOrganizationMembers(w http.ResponseWriter, r *http.Request) {
-	orgName := mux.Vars(r)["organization"]
+	orgName, ok := mux.Vars(r)["organization"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
 	params := query.ParseParams(r)
 
 	admins := false

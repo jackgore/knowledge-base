@@ -38,10 +38,11 @@ type Driver interface {
 	InsertTeam(team.Team) error
 	InsertTeamMember(username, org, team string, isAdmin bool) error
 
-	GetUserOrganizations(uid int) ([]organization.Organization, error)
 	GetOrganization(orgID int) (organization.Organization, error)
 	GetOrganizationByName(name string) (organization.Organization, error)
 	GetOrganizations() ([]organization.Organization, error)
+	GetUserOrganizations(uid int) ([]organization.Organization, error)
+	GetUsernameOrganizations(username string) ([]organization.Organization, error)
 	GetOrganizationMembers(org string, admins bool) ([]string, error)
 	InsertOrganization(organization.Organization) (int, error)
 	InsertOrgMember(username, org string, isAdmin bool) error
