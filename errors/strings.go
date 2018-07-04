@@ -1,19 +1,19 @@
 package errors
 
 const (
-	JSONParseError          = "Unable to parse request body as JSON"
-	JSONError               = "Unable to convert into JSON"
+	BadIDError              = "The requested ID does not exist in our system"
 	CreateResourceError     = "Unable to create resource"
-	ResourceNotFoundError   = "Unable to find resource"
+	DBGetError              = "Unable to retrieve data from database"
 	DBInsertError           = "Unable to insert into database"
 	DBUpdateError           = "Unable to update databse"
-	DBGetError              = "Unable to retrieve data from database"
-	InvalidPathParamError   = "Received bad bath paramater"
-	InvalidCredentialsError = "Invalid username or password"
-	InvalidQueryParamError  = "Invalid query paramater"
+	EmptyCredentialsError   = "Username and password both must be non-empty"
 	InternalServerError     = "Internal server error"
+	InvalidCredentialsError = "Invalid username or password"
+	InvalidPathParamError   = "Received bad bath paramater"
+	InvalidQueryParamError  = "Invalid query paramater"
+	JSONError               = "Unable to convert into JSON"
+	JSONParseError          = "Unable to parse request body as JSON"
 	LoginFailedError        = "Login failed"
 	LogoutFailedError       = "Logout failed"
-	EmptyCredentialsError   = "Username and password both must be non-empty"
-	BadIDError              = "The requested ID does not exist in our system"
+	ResourceNotFoundError   = "Unable to find resource"
 )

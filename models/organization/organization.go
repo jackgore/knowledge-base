@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -12,6 +13,14 @@ const (
 	minNameLength = 1   // Minimum length of the name of the org
 )
 
+var (
+	// ErrOrgNameHasSpaces is used when an organization fails validation
+	// due to the provided name containing spaces.
+	ErrOrgNameHasSpaces = errors.New("organization names cannot contain spaces")
+)
+
+// Organization is the struct use to hold information about an organization
+// using knowledge-base.
 type Organization struct {
 	ID          int       `json:"id"`
 	MemberCount int       `json:"member-count"`
@@ -20,9 +29,8 @@ type Organization struct {
 	Name        string    `json:"name"`
 	CreatedOn   time.Time `json:"created-on"`
 	IsPublic    bool      `json:"is-public"`
-
-	Members []int `json:"members"` // Note: Not sure if it makes sense to have these fields
-	Admins  []int `json:"admins"`
+	Members     []int     `json:"members"`
+	Admins      []int     `json:"admins"`
 }
 
 // Validate ensures the given org meets the required specifications.
@@ -40,6 +48,7 @@ func Validate(org Organization) error {
 	return nil
 }
 
+// validateName ensures that the given org name meets the requirements.
 func validateName(name string) error {
 	if len(name) > maxNameLength {
 		return fmt.Errorf("Length of org name must be less than %v. Has length of %v.", maxNameLength, len(name))
@@ -48,12 +57,13 @@ func validateName(name string) error {
 	}
 
 	if strings.Contains(name, " ") {
-		return fmt.Errorf("Organization names cannot contain spaces")
+		return ErrOrgNameHasSpaces
 	}
 
 	return nil
 }
 
+// validateID ensures the organization id is a valid ID number.
 func validateID(id int) error {
 	if id < 0 {
 		return fmt.Errorf("ID must be a non-negative integer. Received: %v.", id)
