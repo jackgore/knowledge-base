@@ -4,7 +4,7 @@ KBASE_UI=/Users/jack/Projects/knowledge-base-ui
 
 # Build docker images
 docker build --no-cache -t jackgore/knowledge-base .
-docker build --no-cache -t jackgore/knowledge-base-ui ${KBASE_UI}
+docker build --no-cache -f ${KBASE_UI}/Dockerfile.local -t jackgore/knowledge-base-ui ${KBASE_UI}
 
 # Push the docker images
 docker push jackgore/knowledge-base
