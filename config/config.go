@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultAllowPublic      = true
+	DefaultAllowPublic      = false
 	DefaultCookieName       = "knowledge_base"
 	DefaultPublicCookieName = "kb-public"
 	DefaultCookieDuration   = 3600 * 24 * 365

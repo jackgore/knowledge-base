@@ -50,7 +50,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bo
 	s.Router.HandleFunc("/questions/{id}/answers", api.GetAnswers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}", api.GetQuestion).Methods(http.MethodGet)
-	s.Router.HandleFunc("/organizations/{org}/questions", api.GetOrgQuestions).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{org}/questions", o.OrgMember(api.GetOrgQuestions)).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{org}/questions", o.OrgMember(api.SubmitOrgQuestion)).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.GetTeamQuestions).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{org}/teams/{team}/questions", api.SubmitTeamQuestion).Methods(http.MethodPost)
