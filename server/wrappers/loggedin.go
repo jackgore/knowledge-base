@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/JonathonGore/knowledge-base/session"
@@ -20,6 +21,7 @@ func (l *LoggedInMiddleware) Initialize(m session.Manager) {
 func (l *LoggedInMiddleware) LoggedIn(f func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, err := l.m.GetSession(r); err != nil {
+			log.Printf("Received unauthenticated request: %v", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write(httputil.JSON(httputil.ErrorResponse{"unauthorized", http.StatusUnauthorized}))
 		} else {

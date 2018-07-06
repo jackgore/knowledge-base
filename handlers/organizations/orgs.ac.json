@@ -1,0 +1,19 @@
+[
+{
+  "description": "creating an organization",
+  "method": "post",
+  "endpoint": "/organizations",
+  "request": {
+    "json": {
+		"name": "TestOrganization"
+    },
+	"cookies": [{
+		"name": "knowledge_base",
+		"value": "testsession"
+	}]
+  },
+  "response": {
+    "code": 200
+  }
+}
+]

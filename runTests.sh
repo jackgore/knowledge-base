@@ -15,7 +15,7 @@ echo 'finished'
 
 # Create the tables in our database
 echo 'Creating tables in DB...'
-cat data/clearTables.sql data/init.sql | PGPASSWORD=password psql -U kbase -d ${DATABASE_NAME} -h ${KB_HOST} -f - > /dev/null 2>&1
+cat data/clearTables.sql data/init.sql data/testSetup.sql | PGPASSWORD=password psql -U kbase -d ${DATABASE_NAME} -h ${KB_HOST} -f - > /dev/null 2>&1
 
 # Run our server
 echo 'Running knowledge-base server'
