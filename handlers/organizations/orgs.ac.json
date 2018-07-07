@@ -1,6 +1,6 @@
 [
 {
-  "description": "creating an organization",
+  "description": "creating an organization while logged in",
   "method": "post",
   "endpoint": "/organizations",
   "request": {
@@ -14,6 +14,70 @@
   },
   "response": {
     "code": 200
+  }
+},
+{
+  "description": "trying to create an org with spaces",
+  "method": "post",
+  "endpoint": "/organizations",
+  "request": {
+    "json": {
+		"name": "TestOrganization"
+    },
+	"cookies": [{
+		"name": "knowledge_base",
+		"value": "testsession"
+	}]
+  },
+  "response": {
+    "code": 400
+  }
+},
+{
+  "description": "trying to create an org with no name",
+  "method": "post",
+  "endpoint": "/organizations",
+  "request": {
+    "json": {
+		"name": ""
+    },
+	"cookies": [{
+		"name": "knowledge_base",
+		"value": "testsession"
+	}]
+  },
+  "response": {
+    "code": 400
+  }
+},
+{
+  "description": "trying to create an org that already exists",
+  "method": "post",
+  "endpoint": "/organizations",
+  "request": {
+    "json": {
+		"name": "No spaces in org name"
+    },
+	"cookies": [{
+		"name": "knowledge_base",
+		"value": "testsession"
+	}]
+  },
+  "response": {
+    "code": 400
+  }
+},
+{
+  "description": "creating an organization while logged out",
+  "method": "post",
+  "endpoint": "/organizations",
+  "request": {
+    "json": {
+		"name": "TestOrganization2"
+    }
+  },
+  "response": {
+    "code": 401
   }
 }
 ]
