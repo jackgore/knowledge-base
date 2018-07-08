@@ -64,11 +64,13 @@ func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, err
 }
 
 // GetOrganizations retrieves a page of organizations from the database.
-func (d *driver) GetOrganizations() ([]organization.Organization, error) {
-	rows, err := d.db.Query("SELECT id, name, created_on, is_public," +
-		" (SELECT count(*) FROM member_of WHERE id=org_id)," +
-		" (SELECT count(*) FROM team WHERE team.org_id=organization.id)" +
-		" FROM organization order by name")
+// If public is true only public organizations are retrieved.
+func (d *driver) GetOrganizations(public bool) ([]organization.Organization, error) {
+	rows, err := d.db.Query("SELECT id, name, created_on, is_public,"+
+		" (SELECT count(*) FROM member_of WHERE id=org_id),"+
+		" (SELECT count(*) FROM team WHERE team.org_id=organization.id)"+
+		" FROM organization WHERE is_public=$1"+
+		" order by name", public)
 	if err != nil {
 		log.Printf("Unable to receive organizations from the db: %v", err)
 		return nil, err

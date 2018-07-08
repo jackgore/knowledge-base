@@ -2,6 +2,7 @@ package organizations
 
 import (
 	"encoding/json"
+	errs "errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,17 +11,40 @@ import (
 	"github.com/JonathonGore/knowledge-base/errors"
 	"github.com/JonathonGore/knowledge-base/models/organization"
 	"github.com/JonathonGore/knowledge-base/models/team"
+	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/query"
-	"github.com/JonathonGore/knowledge-base/session"
-	"github.com/JonathonGore/knowledge-base/storage"
+	sess "github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/util"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
 
+// storage is the interface required by the organizations handlers to store and
+// and retrieve organization data.
+type storage interface {
+	GetOrganization(orgID int) (organization.Organization, error)
+	GetOrganizationByName(name string) (organization.Organization, error)
+	GetOrganizations(public bool) ([]organization.Organization, error)
+	GetUserByUsername(username string) (user.User, error)
+	GetUserOrganizations(uid int) ([]organization.Organization, error)
+	GetUsernameOrganizations(username string) ([]organization.Organization, error)
+	GetOrganizationMembers(org string, admins bool) ([]string, error)
+	InsertOrganization(organization.Organization) (int, error)
+	InsertOrgMember(username, org string, isAdmin bool) error
+	InsertTeam(t team.Team) error
+}
+
+// session is the interface required by the organizations handler for
+// interacting with user sessions.
+type session interface {
+	GetSession(r *http.Request) (sess.Session, error)
+}
+
+// Handler is responsible for interacting with the data store
+// and session manager to perform business logic.
 type Handler struct {
-	db             storage.Driver
-	sessionManager session.Manager
+	db             storage
+	sessionManager session
 }
 
 type orgAddition struct {
@@ -29,33 +53,93 @@ type orgAddition struct {
 }
 
 // New creates a new handler for handling requests concerning organizations.
-func New(d storage.Driver, sm session.Manager) (*Handler, error) {
+func New(d storage, sm session) (*Handler, error) {
+	if d == nil || sm == nil {
+		return nil, errs.New("storage driver and session manager must both not be nil")
+	}
+
 	return &Handler{d, sm}, nil
+}
+
+// joinOrgs consumes to slices of organizations and merges them into a single one
+// while removing any duplicates. Right now this operation will take O(n^2).
+// Will want to eventually optimize this operation. joinOrgs requires each of orgs1
+// and orgs2 to have no duplicates within themselves.
+func joinOrgs(orgs1 []organization.Organization, orgs2 []organization.Organization) []organization.Organization {
+	for _, org2 := range orgs2 {
+		duplicate := false
+		for _, org1 := range orgs1 {
+			if org1.Name == org2.Name {
+				duplicate = true
+				break
+			}
+		}
+
+		if !duplicate {
+			orgs1 = append(orgs1, org2)
+		}
+	}
+
+	return orgs1
 }
 
 /* GET /organizations
  *
- * Receives a page of organizations
+ * Receieves a page of organizations that are viewable by the requesting user.
+ * This ends up being all public organizations and organizations the user
+ * belongs to.
+ *
+ * Query Params:
+ *		username: if present fetches only organizations the user belongs to.
  */
 func (h *Handler) GetOrganizations(w http.ResponseWriter, r *http.Request) {
-	var (
-		orgs []organization.Organization
-		err  error
-	)
+	var err error
+	var username string
+
+	publicOrgs := []organization.Organization{}
+	userOrgs := []organization.Organization{}
+	public := true // Used as a paramter to only fetch public organizations
 
 	params := query.ParseParams(r)
 
 	username, ok := params["username"]
-	if ok {
-		orgs, err = h.db.GetUsernameOrganizations(username)
-	} else {
-		orgs, err = h.db.GetOrganizations()
+	if !ok {
+		// If no username param provided that means we want to retrieve all
+		// organizations viewable by the requesting user.
+		publicOrgs, err = h.db.GetOrganizations(public)
+		if err != nil {
+			httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
+			return
+		}
+
+		session, err := h.sessionManager.GetSession(r)
+		if err != nil {
+			// No session attached to request so set username to "" to prevent retrieval
+			// of user organizations
+			username = ""
+		} else {
+			username = session.Username
+		}
 	}
 
-	if err != nil {
-		httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
-		return
+	// Only retrieve organizations for a username if there is a non-empty username
+	if username != "" {
+		// Ensure the user is allowed to get orgs for the requested user
+		session, err := h.sessionManager.GetSession(r)
+		if err != nil || session.Username != username {
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		userOrgs, err = h.db.GetUsernameOrganizations(username)
+		if err != nil {
+			httputil.HandleError(w, errors.DBGetError, http.StatusInternalServerError)
+			return
+		}
 	}
+
+	// Join userOrgs and publicOrgs removing duplicates.
+	orgs := joinOrgs(publicOrgs, userOrgs)
 
 	contents, err := json.Marshal(orgs)
 	if err != nil {

@@ -40,7 +40,7 @@ type Driver interface {
 
 	GetOrganization(orgID int) (organization.Organization, error)
 	GetOrganizationByName(name string) (organization.Organization, error)
-	GetOrganizations() ([]organization.Organization, error)
+	GetOrganizations(public bool) ([]organization.Organization, error)
 	GetUserOrganizations(uid int) ([]organization.Organization, error)
 	GetUsernameOrganizations(username string) ([]organization.Organization, error)
 	GetOrganizationMembers(org string, admins bool) ([]string, error)
