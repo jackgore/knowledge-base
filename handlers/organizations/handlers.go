@@ -169,6 +169,27 @@ func (h *Handler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Now we must ensure that the requested org is public or the requesting user belongs to the org
+	if !org.IsPublic {
+		s, err := h.sessionManager.GetSession(r)
+		if err != nil {
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		members, err := h.db.GetOrganizationMembers(orgName, false)
+		if err != nil {
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if !util.Contains(members, s.Username) {
+			// If the requesting user is not an org member then they are unauthorized
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	contents, err := json.Marshal(org)
 	if err != nil {
 		httputil.HandleError(w, errors.JSONError, http.StatusInternalServerError)

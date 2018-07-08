@@ -22,6 +22,9 @@ const (
 
 	testCookieName   = "kb-test-cookie"
 	validCookieValue = "valid cookie"
+
+	publicOrgName  = "publicOrg"
+	privateOrgName = "privateOrg"
 )
 
 var (
@@ -32,11 +35,13 @@ var (
 	}
 
 	publicOrg = organization.Organization{
-		Name: "publicOrg",
+		Name:     publicOrgName,
+		IsPublic: true,
 	}
 
 	privateUserOrg = organization.Organization{
-		Name: "privateOrg",
+		Name:     privateOrgName,
+		IsPublic: false,
 	}
 )
 
@@ -84,6 +89,12 @@ func (m *MockStorage) GetOrganization(orgID int) (organization.Organization, err
 }
 
 func (m *MockStorage) GetOrganizationByName(name string) (organization.Organization, error) {
+	if name == publicOrgName {
+		return publicOrg, nil
+	} else if name == privateOrgName {
+		return privateUserOrg, nil
+	}
+
 	return organization.Organization{}, nil
 }
 
@@ -104,6 +115,10 @@ func (m *MockStorage) GetUsernameOrganizations(username string) ([]organization.
 }
 
 func (m *MockStorage) GetOrganizationMembers(org string, admins bool) ([]string, error) {
+	if org == privateOrgName {
+		return []string{validUsername}, nil
+	}
+
 	return []string{}, nil
 }
 

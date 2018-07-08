@@ -19,6 +19,17 @@ var (
 	router  *mux.Router
 )
 
+var getOrganizationTests = []struct {
+	cookie  string
+	orgname string
+	code    int
+	org     org.Organization
+}{
+	{"", publicOrgName, 200, publicOrg},                     // Getting public organizations should succeed if you are not logged in
+	{validCookieValue, publicOrgName, 200, publicOrg},       // Getting public organizations should succeed if you are logged in
+	{validCookieValue, privateOrgName, 200, privateUserOrg}, // Getting public organizations should succeed if you are logged in
+}
+
 var getOrganizationsTests = []struct {
 	cookie   string
 	username string
@@ -73,6 +84,7 @@ func init() {
 
 	router = mux.NewRouter()
 	router.HandleFunc("/organizations", handler.GetOrganizations).Methods(http.MethodGet)
+	router.HandleFunc("/organizations/{organization}", handler.GetOrganization).Methods(http.MethodGet)
 }
 
 func TestNew(t *testing.T) {
@@ -128,6 +140,40 @@ func TestGetOrganizations(t *testing.T) {
 
 		if test.orgs != nil && !reflect.DeepEqual(orgs, test.orgs) {
 			t.Errorf("did not received exepected orgs from /organizations")
+		}
+	}
+}
+
+func TestGetOrganization(t *testing.T) {
+	for _, test := range getOrganizationTests {
+		r, err := http.NewRequest(http.MethodGet, "/organizations/"+test.orgname, nil)
+		if err != nil {
+			t.Errorf("unexepceted error when creating request %v", err)
+		}
+
+		if test.cookie != "" {
+			r.Header.Set("Cookie", fmt.Sprintf("%v=%v", testCookieName, test.cookie))
+		}
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, r)
+
+		contents, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Errorf("received unexpected error when testing: %v", err)
+		}
+
+		org := org.Organization{}
+		if json.Unmarshal(contents, &org); err != nil {
+			t.Errorf("received unexpected error when testing: %v", err)
+		}
+
+		if test.code != w.Code {
+			t.Errorf("Received status code: %v Expected: %v", w.Code, test.code)
+		}
+
+		if !reflect.DeepEqual(test.org, org) {
+			t.Errorf("did not received exepected org from /organizations/" + test.orgname)
 		}
 	}
 }
