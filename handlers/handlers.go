@@ -6,6 +6,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/handlers/questions"
 	"github.com/JonathonGore/knowledge-base/handlers/teams"
 	"github.com/JonathonGore/knowledge-base/handlers/users"
+	"github.com/JonathonGore/knowledge-base/search"
 	"github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/storage"
 )
@@ -21,13 +22,13 @@ type Handler struct {
 	sessionManager session.Manager
 }
 
-func New(d storage.Driver, sm session.Manager) (*Handler, error) {
+func New(d storage.Driver, sm session.Manager, search search.Search) (*Handler, error) {
 	userHandler, err := users.New(d, sm)
 	if err != nil {
 		return nil, err
 	}
 
-	questionHandler, err := questions.New(d, sm)
+	questionHandler, err := questions.New(d, sm, search)
 	if err != nil {
 		return nil, err
 	}

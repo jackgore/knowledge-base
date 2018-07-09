@@ -46,6 +46,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bo
 		s.Router.HandleFunc("/questions", api.SubmitQuestion).Methods(http.MethodPost)
 	}
 
+	s.Router.HandleFunc("/search", api.Search).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/answers", api.SubmitAnswer).Methods(http.MethodPost)
 	s.Router.HandleFunc("/questions/{id}/answers", api.GetAnswers).Methods(http.MethodGet)
 	s.Router.HandleFunc("/questions/{id}/view", api.ViewQuestion).Methods(http.MethodPost)

@@ -10,6 +10,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/config"
 	"github.com/JonathonGore/knowledge-base/handlers"
 	_ "github.com/JonathonGore/knowledge-base/logging"
+	esearch "github.com/JonathonGore/knowledge-base/search/elasticsearch"
 	"github.com/JonathonGore/knowledge-base/server"
 	"github.com/JonathonGore/knowledge-base/session/managers"
 	"github.com/JonathonGore/knowledge-base/storage"
@@ -41,7 +42,13 @@ func main() {
 		log.Fatalf("unable to create session manager: %v", err)
 	}
 
-	api, err = handlers.New(d, sm)
+	esConfig := esearch.Config{Host: "http://127.0.0.1:9200", Index: "knowledge-base"}
+	search, err := esearch.New(esConfig)
+	if err != nil {
+		log.Printf("Unable to create elastic client: %v", err)
+	}
+
+	api, err = handlers.New(d, sm, search)
 	if err != nil {
 		log.Fatalf("unable to create handler: %v", err)
 	}

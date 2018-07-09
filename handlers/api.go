@@ -14,6 +14,7 @@ type API interface {
 	GetQuestion(w http.ResponseWriter, r *http.Request)
 	GetOrgQuestions(w http.ResponseWriter, r *http.Request)
 	GetTeamQuestions(w http.ResponseWriter, r *http.Request)
+	Search(w http.ResponseWriter, r *http.Request)
 	SubmitTeamQuestion(w http.ResponseWriter, r *http.Request)
 	SubmitOrgQuestion(w http.ResponseWriter, r *http.Request)
 

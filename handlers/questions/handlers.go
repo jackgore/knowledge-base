@@ -13,6 +13,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/team"
 	"github.com/JonathonGore/knowledge-base/models/user"
 	"github.com/JonathonGore/knowledge-base/query"
+	"github.com/JonathonGore/knowledge-base/search"
 	sess "github.com/JonathonGore/knowledge-base/session"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
@@ -21,6 +22,7 @@ import (
 type Handler struct {
 	db             storage
 	sessionManager session
+	search         search.Search
 }
 
 type storage interface {
@@ -46,12 +48,12 @@ type session interface {
 
 // New creates a new questions handler with the given storage
 // driver and session manager.
-func New(d storage, sm session) (*Handler, error) {
+func New(d storage, sm session, s search.Search) (*Handler, error) {
 	if d == nil || sm == nil {
 		return nil, fmt.Errorf("storage drive and session manager must not be nil")
 	}
 
-	return &Handler{d, sm}, nil
+	return &Handler{d, sm, s}, nil
 }
 
 // PrepareQuestion is a helper function to validate the the question contained
@@ -85,6 +87,7 @@ func (h *Handler) prepareQuestion(w http.ResponseWriter, r *http.Request) (quest
 	}
 
 	q.Author = u.ID
+	q.SubmittedOn = time.Now()
 
 	return q, nil
 }
@@ -172,6 +175,10 @@ func (h *Handler) SubmitOrgQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.search.IndexQuestion(q); err != nil {
+		log.Printf("Unable to index question in elasticsearch: %v", err)
+	}
+
 	w.Write(httputil.JSON(httputil.IDResponse{id}))
 }
 
@@ -197,6 +204,10 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httputil.HandleError(w, fmt.Sprintf("%v", err), id)
 		return
+	}
+
+	if err := h.search.IndexQuestion(q); err != nil {
+		log.Printf("Unable to index question in elasticsearch: %v", err)
 	}
 
 	w.Write(httputil.JSON(httputil.IDResponse{id}))
@@ -247,6 +258,10 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.search.IndexQuestion(q); err != nil {
+		log.Printf("Unable to index question in elasticsearch: %v", err)
+	}
+
 	w.Write(httputil.JSON(httputil.IDResponse{id}))
 }
 
@@ -270,6 +285,31 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(httputil.JSON(question))
+}
+
+/* GET /search
+ *
+ * Search through questions to retrieve questions relavent to the provided query
+ * Params:
+ *		query: the query string
+ */
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	qparams := query.ParseParams(r)
+	query, ok := qparams["query"]
+	if !ok {
+		httputil.HandleError(w, "search requires you to pass a query string", http.StatusBadRequest)
+		return
+	}
+
+	questions, err := h.search.Search(query)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(httputil.JSON(questions))
 }
 
 /* GET /questions
