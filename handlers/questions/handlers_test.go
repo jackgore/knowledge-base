@@ -43,7 +43,7 @@ var submitTests = []struct {
 func init() {
 	log.SetOutput(ioutil.Discard)
 
-	handler = Handler{&MockStorage{}, &MockSession{}}
+	handler = Handler{&MockStorage{}, &MockSession{}, &MockSearch{}}
 	router = mux.NewRouter()
 	router.HandleFunc("/questions", handler.SubmitQuestion).Methods(http.MethodPost)
 }
@@ -65,7 +65,7 @@ func TestSubmitQuestion(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	_, err := New(nil, nil)
+	_, err := New(nil, nil, nil)
 	if err == nil {
 		t.Errorf("Expected to receive error when passing nil interfaces")
 	}

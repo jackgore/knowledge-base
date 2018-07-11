@@ -10,6 +10,16 @@ import (
 	sess "github.com/JonathonGore/knowledge-base/session"
 )
 
+type MockSearch struct{}
+
+func (m *MockSearch) Search(q string) ([]question.Question, error) {
+	return nil, nil
+}
+
+func (m *MockSearch) IndexQuestion(q question.Question) error {
+	return nil
+}
+
 type MockSession struct{}
 
 func (m *MockSession) GetSession(r *http.Request) (sess.Session, error) {
