@@ -12,7 +12,7 @@ import (
 
 type MockSearch struct{}
 
-func (m *MockSearch) Search(q string) ([]question.Question, error) {
+func (m *MockSearch) Search(q string, orgs []string) ([]question.Question, error) {
 	return nil, nil
 }
 
@@ -45,6 +45,10 @@ func (m *MockSession) SessionDestroy(w http.ResponseWriter, r *http.Request) err
 type MockStorage struct{}
 
 func (m *MockStorage) GetOrgQuestions(org string) ([]question.Question, error) {
+	return nil, nil
+}
+
+func (m *MockStorage) GetUsernameOrganizations(username string) ([]organization.Organization, error) {
 	return nil, nil
 }
 
