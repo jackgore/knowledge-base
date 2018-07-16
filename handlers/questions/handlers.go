@@ -33,6 +33,7 @@ type storage interface {
 	GetTeamQuestions(team, org string) ([]question.Question, error)
 	GetTeamByName(org, team string) (team.Team, error)
 	GetUserByUsername(username string) (user.User, error)
+	GetUsernameOrganizations(username string) ([]organization.Organization, error)
 	GetUserQuestions(id int) ([]question.Question, error)
 	InsertQuestion(question question.Question) (int, error)
 	InsertTeamQuestion(question question.Question, tid int) (int, error)
@@ -141,10 +142,6 @@ func (h *Handler) insertQuestion(q question.Question, team, org string) (int, er
 		return http.StatusBadRequest, fmt.Errorf("Default team for org %v does not exist", org)
 	}
 
-	q.Team = team
-	q.Organization = org
-	q.SubmittedOn = time.Now()
-
 	id, err := h.db.InsertTeamQuestion(q, t.ID)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("%v", errors.DBInsertError)
@@ -169,11 +166,17 @@ func (h *Handler) SubmitOrgQuestion(w http.ResponseWriter, r *http.Request) {
 		return // We write to w in prepareQuestion
 	}
 
+	q.Team = "default"
+	q.Organization = org
+	q.SubmittedOn = time.Now()
+
 	id, err := h.insertQuestion(q, "default", org)
 	if err != nil {
 		httputil.HandleError(w, fmt.Sprintf("%v", err), id)
 		return
 	}
+
+	q.ID = id // Attach id to request
 
 	if err := h.search.IndexQuestion(q); err != nil {
 		log.Printf("Unable to index question in elasticsearch: %v", err)
@@ -200,11 +203,17 @@ func (h *Handler) SubmitTeamQuestion(w http.ResponseWriter, r *http.Request) {
 		return // We write to w in prepareQuestion
 	}
 
+	q.Team = team
+	q.Organization = org
+	q.SubmittedOn = time.Now()
+
 	id, err := h.insertQuestion(q, team, org)
 	if err != nil {
 		httputil.HandleError(w, fmt.Sprintf("%v", err), id)
 		return
 	}
+
+	q.ID = id
 
 	if err := h.search.IndexQuestion(q); err != nil {
 		log.Printf("Unable to index question in elasticsearch: %v", err)
@@ -258,6 +267,8 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	q.ID = id
+
 	if err := h.search.IndexQuestion(q); err != nil {
 		log.Printf("Unable to index question in elasticsearch: %v", err)
 	}
@@ -270,6 +281,8 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
  * Retrieves a question from the database with the given id
  */
 func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
+	// TODO: Ensure user is allowed to view the question
+
 	idStr := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(idStr)
@@ -292,9 +305,11 @@ func (h *Handler) GetQuestion(w http.ResponseWriter, r *http.Request) {
  * Search through questions to retrieve questions relavent to the provided query
  * Params:
  *		query: the query string
+ *      organization: the org to look for questions in
  */
 func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	var err error
+	orgs := make([]string, 0)
 
 	qparams := query.ParseParams(r)
 	query, ok := qparams["query"]
@@ -303,7 +318,33 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	questions, err := h.search.Search(query)
+	org, ok := qparams["org"]
+	if !ok {
+		// TODO: Eventually need to allow for public orgs to be searched
+		s, err := h.sessionManager.GetSession(r)
+		if err != nil {
+			for _, cookie := range r.Cookies() {
+				log.Printf("Cookie: %v", *cookie)
+			}
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		orgList, err := h.db.GetUsernameOrganizations(s.Username)
+		if err != nil {
+			log.Printf("Error getting username organizations: %v", err)
+			httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		for _, o := range orgList {
+			orgs = append(orgs, o.Name)
+		}
+	} else {
+		orgs = append(orgs, org)
+	}
+
+	questions, err := h.search.Search(query, orgs)
 	if err != nil {
 		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
 		return

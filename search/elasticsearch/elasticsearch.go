@@ -50,15 +50,22 @@ func New(conf Config) (*SearchClient, error) {
 }
 
 // Search consumes a query string and finds matching documents in ElasticSearch.
-func (s *SearchClient) Search(query string) ([]question.Question, error) {
+func (s *SearchClient) Search(query string, orgs []string) ([]question.Question, error) {
 	ctx := context.Background()
 
-	// TODO: Right now this only seraches the title of posts will want to expand to include content
-	matchQuery := elastic.NewMatchQuery("title", query)
-	searchResult, err := s.eclient.Search().
+	// TODO: Right now this only searches the title of posts will want to expand to include content
+	matchQuery := elastic.NewMultiMatchQuery(query, "title", "content")
+
+	searchQuery := s.eclient.Search().
 		Index(s.config.Index).
-		Query(matchQuery).
-		Do(ctx)
+		Query(matchQuery)
+
+	if len(orgs) > 0 {
+		// As of right now this overwrites original query
+		//searchQuery.Query(elastic.NewTermsQuery("organization", orgs))
+	}
+
+	searchResult, err := searchQuery.Do(ctx)
 	if err != nil {
 		return nil, err
 	}
