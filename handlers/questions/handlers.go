@@ -346,7 +346,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 	questions, err := h.search.Search(query, orgs)
 	if err != nil {
-		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		httputil.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

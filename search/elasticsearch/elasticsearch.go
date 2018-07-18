@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 
 	"github.com/JonathonGore/knowledge-base/models/question"
 	"github.com/olivere/elastic"
@@ -51,21 +52,26 @@ func New(conf Config) (*SearchClient, error) {
 
 // Search consumes a query string and finds matching documents in ElasticSearch.
 func (s *SearchClient) Search(query string, orgs []string) ([]question.Question, error) {
+	log.Printf("received search for query: %v in orgs: %v", query, orgs)
+
 	ctx := context.Background()
 
-	// TODO: Right now this only searches the title of posts will want to expand to include content
-	matchQuery := elastic.NewMultiMatchQuery(query, "title", "content")
+	boolQuery := elastic.NewBoolQuery()
 
-	searchQuery := s.eclient.Search().
-		Index(s.config.Index).
-		Query(matchQuery)
+	boolQuery.Must(elastic.NewMultiMatchQuery(query, "title", "content"))
 
 	if len(orgs) > 0 {
-		// As of right now this overwrites original query
-		//searchQuery.Query(elastic.NewTermsQuery("organization", orgs))
+		terms := make([]interface{}, len(orgs))
+		for i, org := range orgs {
+			terms[i] = strings.ToLower(org)
+		}
+
+		boolQuery.Must(elastic.NewTermsQuery("organization", terms...))
 	}
 
-	searchResult, err := searchQuery.Do(ctx)
+	searchResult, err := s.eclient.Search().
+		Index(s.config.Index).
+		Query(boolQuery).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
