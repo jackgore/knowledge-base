@@ -270,6 +270,7 @@ func (h *Handler) SubmitQuestion(w http.ResponseWriter, r *http.Request) {
 	q.ID = id
 
 	if err := h.search.IndexQuestion(q); err != nil {
+		// Dont cause the operation to fail if this break
 		log.Printf("Unable to index question in elasticsearch: %v", err)
 	}
 

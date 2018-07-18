@@ -1,0 +1,34 @@
+[
+{
+  "description": "creating a org question while logged out",
+  "method": "POST",
+  "endpoint": "/organizations/testorg/questions",
+  "request": {
+    "json": {
+		"title": "Where do I find the Wifi password?",
+        "content": "Find it posted on the fridge"
+    }
+  },
+  "response": {
+    "code": 401
+  }
+},
+{
+  "description": "creating an org question while logged in",
+  "method": "post",
+  "endpoint": "/organizations/testorg/questions",
+  "request": {
+    "json": {
+		"title": "Where do I find the Wifi password?",
+        "content": "Find it posted on the fridge"
+    },
+	"cookies": [{
+		"name": "knowledge_base",
+		"value": "testsession"
+	}]
+  },
+  "response": {
+    "code": 200
+  }
+}
+]
