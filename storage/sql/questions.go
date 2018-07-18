@@ -8,8 +8,35 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/question"
 )
 
-/* Gets the question with the given id from the database.
- */
+// DeleteQuestion deletes the question with the given id from the database.
+func (d *driver) DeleteQuestion(id int) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM question WHERE id = $1;", id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM post_of WHERE pid = $1;", id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM post WHERE id = $1;", id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// GetQuestion retrieves the question with the given id from the database.
 func (d *driver) GetQuestion(id int) (question.Question, error) {
 	question := question.Question{}
 	err := d.db.QueryRow(
@@ -27,8 +54,7 @@ func (d *driver) GetQuestion(id int) (question.Question, error) {
 	return question, nil
 }
 
-/* Updates the view count by one for the question with the given id
- */
+// ViewQuestion updates the view count by one for the question with the given id
 func (d *driver) ViewQuestion(id int) error {
 	_, err := d.db.Exec("UPDATE post SET views = views + 1 WHERE id = $1;", id)
 	if err != nil {

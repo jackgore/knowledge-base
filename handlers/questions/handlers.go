@@ -15,6 +15,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/query"
 	"github.com/JonathonGore/knowledge-base/search"
 	sess "github.com/JonathonGore/knowledge-base/session"
+	"github.com/JonathonGore/knowledge-base/util"
 	"github.com/JonathonGore/knowledge-base/util/httputil"
 	"github.com/gorilla/mux"
 )
@@ -26,6 +27,8 @@ type Handler struct {
 }
 
 type storage interface {
+	DeleteQuestion(id int) error
+	GetOrganizationMembers(org string, admins bool) ([]string, error)
 	GetOrgQuestions(org string) ([]question.Question, error)
 	GetOrganizationByName(name string) (organization.Organization, error)
 	GetQuestion(id int) (question.Question, error)
@@ -55,6 +58,54 @@ func New(d storage, sm session, s search.Search) (*Handler, error) {
 	}
 
 	return &Handler{d, sm, s}, nil
+}
+
+// DeleteQuestion deletes the question with the specified id in path paramater.
+func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
+		return
+	}
+
+	// The user must either be an admin or the author of the question to delete
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q, err := h.db.GetQuestion(id)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: Handle the case that will prevent users from leaving org and then deleting question
+	if sess.Username != q.Username {
+		// If the incoming user is not the author see if they are an admin of the org
+		admins, err := h.db.GetOrganizationMembers(q.Organization, true)
+		if err != nil {
+			httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		if !util.Contains(admins, sess.Username) {
+			httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	err = h.db.DeleteQuestion(id)
+	if err != nil {
+		log.Printf("error: %v", err.Error())
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK) // TODO: include JSON body
 }
 
 // PrepareQuestion is a helper function to validate the the question contained

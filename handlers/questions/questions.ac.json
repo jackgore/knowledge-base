@@ -15,7 +15,7 @@
 },
 {
   "description": "creating an org question while logged in",
-  "method": "post",
+  "method": "POST",
   "endpoint": "/organizations/testorg/questions",
   "request": {
     "json": {
@@ -29,6 +29,14 @@
   },
   "response": {
     "code": 200
+  }
+},
+{
+  "description": "deleting a question while not logged in",
+  "method": "DELETE",
+  "endpoint": "/questions/1",
+  "response": {
+    "code": 401
   }
 }
 ]

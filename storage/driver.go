@@ -14,6 +14,7 @@ type Driver interface {
 	GetAnswers(qid int) ([]answer.Answer, error)
 
 	// TODO: GetQuestion should return an additional boolean to indicate existance
+	DeleteQuestion(id int) error
 	GetQuestion(id int) (question.Question, error)
 	GetQuestions() ([]question.Question, error)
 	GetUserQuestions(id int) ([]question.Question, error)
