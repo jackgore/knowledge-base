@@ -20,8 +20,12 @@ const (
 	validUsername = "jacky"
 	validPassword = "password"
 
-	testCookieName   = "kb-test-cookie"
-	validCookieValue = "valid cookie"
+	nonOrgMemberUsername = "nonOrgMember"
+	nonOrgMemberPassword = "password"
+
+	testCookieName    = "kb-test-cookie"
+	validCookieValue  = "valid cookie"
+	nonOrgMemberValue = "nonorgcookie"
 
 	publicOrgName  = "publicOrg"
 	privateOrgName = "privateOrg"
@@ -57,13 +61,15 @@ func (m *MockSession) GetSession(r *http.Request) (sess.Session, error) {
 		return s, errors.New("No cookie attached")
 	}
 
-	if c.Value != validCookieValue {
-		return s, errors.New("Invalid cookie value")
+	if c.Value == validCookieValue {
+		s.Username = validUsername
+		return s, nil
+	} else if c.Value == nonOrgMemberValue {
+		s.Username = nonOrgMemberUsername
+		return s, nil
 	}
 
-	s.Username = validUsername
-
-	return s, nil
+	return s, errors.New("Invalid cookie value")
 }
 
 // MockStorage is a mock implementation of the mock storage component used by the users handler.

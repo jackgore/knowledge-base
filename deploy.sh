@@ -1,9 +1,10 @@
 #!/bin/bash
 
-KBASE_UI=/Users/jack/Projects/knowledge-base-ui
+KBASE_UI=${PROJECTS_HOME}/knowledge-base-ui
+KBASE=${GOPATH}/src/github.com/JonathonGore/knowledge-base
 
 # Build docker images
-docker build --no-cache -t jackgore/knowledge-base .
+docker build --no-cache -f ${KBASE}/Dockerfile -t jackgore/knowledge-base ${KBASE}
 docker build --no-cache -f ${KBASE_UI}/Dockerfile.local -t jackgore/knowledge-base-ui ${KBASE_UI}
 
 # Push the docker images

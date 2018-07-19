@@ -63,6 +63,8 @@ func (s *SearchClient) Search(query string, orgs []string) ([]question.Question,
 	if len(orgs) > 0 {
 		terms := make([]interface{}, len(orgs))
 		for i, org := range orgs {
+			// Term query performs a non-analyzed search. By default all tokens
+			// are stored in lowercase.
 			terms[i] = strings.ToLower(org)
 		}
 

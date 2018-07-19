@@ -47,6 +47,7 @@ type Handler struct {
 	sessionManager session
 }
 
+// orgAddition is used for adding a user to an organization
 type orgAddition struct {
 	Username string `json:"username"`
 	Admin    bool   `json:"admin"`

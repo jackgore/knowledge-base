@@ -25,9 +25,10 @@ var getOrganizationTests = []struct {
 	code    int
 	org     org.Organization
 }{
-	{"", publicOrgName, 200, publicOrg},                     // Getting public organizations should succeed if you are not logged in
-	{validCookieValue, publicOrgName, 200, publicOrg},       // Getting public organizations should succeed if you are logged in
-	{validCookieValue, privateOrgName, 200, privateUserOrg}, // Getting public organizations should succeed if you are logged in
+	{"", publicOrgName, 200, publicOrg},                      // Getting public org should succeed if not logged in
+	{validCookieValue, publicOrgName, 200, publicOrg},        // Getting public org should succeed if logged in
+	{validCookieValue, privateOrgName, 200, privateUserOrg},  // Getting private org should succeed if logged in and a member
+	{nonOrgMemberValue, privateOrgName, 401, privateUserOrg}, // Getting private org should should if logged in as non-member
 }
 
 var getOrganizationsTests = []struct {
@@ -172,7 +173,7 @@ func TestGetOrganization(t *testing.T) {
 			t.Errorf("Received status code: %v Expected: %v", w.Code, test.code)
 		}
 
-		if !reflect.DeepEqual(test.org, org) {
+		if test.code == 200 && !reflect.DeepEqual(test.org, org) {
 			t.Errorf("did not received exepected org from /organizations/" + test.orgname)
 		}
 	}
