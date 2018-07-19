@@ -60,6 +60,10 @@ func (m *MockStorage) DeleteQuestion(id int) error {
 	return nil
 }
 
+func (m *MockStorage) VoteQuestion(id, uid int, upvote bool) error {
+	return nil
+}
+
 func (m *MockStorage) GetOrganizationMembers(org string, admin bool) ([]string, error) {
 	return nil, nil
 }

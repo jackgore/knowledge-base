@@ -40,12 +40,14 @@ func (d *driver) DeleteQuestion(id int) error {
 func (d *driver) GetQuestion(id int) (question.Question, error) {
 	question := question.Question{}
 	err := d.db.QueryRow(
-		" SELECT post.id as id, users.username, submitted_on, title, content, author, views,"+
+		" SELECT post.id as id, users.username, submitted_on, title, content, author, views, organization.name,"+
 			" (SELECT count(*) from answer where post.id=answer.question) as answers"+
-			" FROM (post NATURAL JOIN question) JOIN users ON (author = users.id)"+
+			" FROM ((((post NATURAL JOIN question) JOIN users ON (author = users.id))"+
+			" JOIN post_of ON (post.id = post_of.pid)) JOIN team ON (team.id = post_of.tid))"+
+			" JOIN organization ON (team.org_id = organization.id)"+
 			" where post.id=$1",
 		id).Scan(&question.ID, &question.Username, &question.SubmittedOn, &question.Title,
-		&question.Content, &question.Author, &question.Views, &question.Answers)
+		&question.Content, &question.Author, &question.Views, &question.Organization, &question.Answers)
 	if err != nil {
 		log.Printf("Unable to retrieve question with id %v: %v", id, err)
 		return question, err
@@ -59,6 +61,37 @@ func (d *driver) ViewQuestion(id int) error {
 	_, err := d.db.Exec("UPDATE post SET views = views + 1 WHERE id = $1;", id)
 	if err != nil {
 		log.Printf("Unable to update view count for question with id %v: %v", id, err)
+		return err
+	}
+
+	return nil
+}
+
+// VoteQuestion updates the view count by one for the question with the given id
+func (d *driver) VoteQuestion(qid int, uid int, upvote bool) error {
+	rows, err := d.db.Query("SELECT upvote FROM vote WHERE uid=$1 AND qid=$2", uid, qid)
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		// we expect a maximum of one result row
+		var vote bool
+		err := rows.Scan(&vote)
+		if err != nil {
+			return err
+		}
+
+		// Now update the database according to the provided value
+		_, err = d.db.Exec("UPDATE vote SET upvote=$1 WHERE uid=$2 AND qid=$3;", upvote, uid, qid)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_, err = d.db.Exec("INSERT INTO vote (qid, uid, upvote) VALUES ($1, $2, $3)", qid, uid, upvote)
+	if err != nil {
 		return err
 	}
 

@@ -41,6 +41,7 @@ type storage interface {
 	InsertQuestion(question question.Question) (int, error)
 	InsertTeamQuestion(question question.Question, tid int) (int, error)
 	ViewQuestion(id int) error
+	VoteQuestion(qid int, uid int, upvote bool) error
 }
 
 type session interface {
@@ -456,4 +457,79 @@ func (h *Handler) ViewQuestion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK) // TODO: include JSON body
+}
+
+/* POST /questions/{id}/upvote
+ *
+ * Upon receiving this request it will upvote the requested
+ * question in the database.
+ * Must be logged in to perform this action.
+ */
+func (h *Handler) UpvoteQuestion(w http.ResponseWriter, r *http.Request) {
+	h.voteQuestion(w, r, true)
+}
+
+/* POST /questions/{id}/downvote
+ *
+ * Upon receiving this request it will downvote the requested
+ * question in the database.
+ * Must be logged in to perform this action.
+ */
+func (h *Handler) DownvoteQuestion(w http.ResponseWriter, r *http.Request) {
+	h.voteQuestion(w, r, false)
+}
+
+// voteQuestion handles the upvote or down vote for each of the respective handlers
+func (h *Handler) voteQuestion(w http.ResponseWriter, r *http.Request, upvote bool) {
+	idStr := mux.Vars(r)["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		httputil.HandleError(w, errors.BadIDError, http.StatusBadRequest)
+		return
+	}
+
+	sess, err := h.sessionManager.GetSession(r)
+	if err != nil {
+		httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q, err := h.db.GetQuestion(id)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	if sess.Username == q.Username {
+		httputil.HandleError(w, "cannot vote on your own question", http.StatusBadRequest)
+		return
+	}
+
+	members, err := h.db.GetOrganizationMembers(q.Organization, false)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Members of organization: %v - %v", q.Organization, members)
+
+	if !util.Contains(members, sess.Username) {
+		httputil.HandleError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	u, err := h.db.GetUserByUsername(sess.Username)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	err = h.db.VoteQuestion(id, u.ID, upvote)
+	if err != nil {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

@@ -96,3 +96,12 @@ CREATE TABLE IF NOT EXISTS answer (
 	FOREIGN KEY (id) REFERENCES followup (id),
 	FOREIGN KEY (question) REFERENCES question (id)
 );
+
+CREATE TABLE IF NOT EXISTS vote (
+	qid INT NOT NULL,
+	uid INT NOT NULL,
+	upvote BOOLEAN NOT NULL,
+	PRIMARY KEY (qid, uid),
+	FOREIGN KEY (qid) REFERENCES post (id),
+	FOREIGN KEY (uid) REFERENCES users (id)
+);

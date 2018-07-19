@@ -23,6 +23,7 @@ type Driver interface {
 	InsertQuestion(question question.Question) (int, error)
 	InsertTeamQuestion(question question.Question, tid int) (int, error)
 	ViewQuestion(id int) error
+	VoteQuestion(qid, uid int, upvote bool) error
 
 	DeleteUserByUsername(username string) error
 	InsertUser(user user.User) error

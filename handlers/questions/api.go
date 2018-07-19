@@ -15,4 +15,6 @@ type QuestionRoutes interface {
 	SubmitOrgQuestion(w http.ResponseWriter, r *http.Request)
 	SubmitQuestion(w http.ResponseWriter, r *http.Request)
 	ViewQuestion(w http.ResponseWriter, r *http.Request)
+	UpvoteQuestion(w http.ResponseWriter, r *http.Request)
+	DownvoteQuestion(w http.ResponseWriter, r *http.Request)
 }

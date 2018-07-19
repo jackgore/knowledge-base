@@ -11,6 +11,8 @@ type API interface {
 	SubmitQuestion(w http.ResponseWriter, r *http.Request)
 	DeleteQuestion(w http.ResponseWriter, r *http.Request)
 	ViewQuestion(w http.ResponseWriter, r *http.Request)
+	UpvoteQuestion(w http.ResponseWriter, r *http.Request)
+	DownvoteQuestion(w http.ResponseWriter, r *http.Request)
 	GetQuestions(w http.ResponseWriter, r *http.Request)
 	GetQuestion(w http.ResponseWriter, r *http.Request)
 	GetOrgQuestions(w http.ResponseWriter, r *http.Request)
