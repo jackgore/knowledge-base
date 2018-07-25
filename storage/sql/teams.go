@@ -6,8 +6,7 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/team"
 )
 
-/* Gets the teams for the given org from the database.
- */
+// GetsTeams retrieves the teams for the given org from the database.
 func (d *driver) GetTeams(org string) ([]team.Team, error) {
 	rows, err := d.db.Query("SELECT team.id, team.org_id, team.name, team.created_on, team.is_public,"+
 		" (SELECT count(*) FROM member_of_team WHERE member_of_team.team_id=team.id)"+
@@ -46,6 +45,38 @@ func (d *driver) GetTeam(teamID int) (team.Team, error) {
 	}
 
 	return t, nil
+}
+
+// GetTeamMembers retrieves a list of member usernames from the given team.
+func (d *driver) GetTeamMembers(org, team string, admins bool) ([]string, error) {
+	adminCheck := ""
+	if admins {
+		adminCheck = " AND member_of_team.admin=true"
+	}
+
+	rows, err := d.db.Query(
+		"SELECT username FROM users, organization, member_of_team, team"+
+			" WHERE users.id = member_of_team.user_id AND organization.id = team.org_id"+
+			" AND team.name=$1 and organization.name=$2"+
+			adminCheck+
+			" ORDER BY username", team, org)
+	if err != nil {
+		log.Printf("Unable to receive team members from the db: %v", err)
+		return nil, err
+	}
+
+	usernames := make([]string, 0)
+	for rows.Next() {
+		var username string
+		err := rows.Scan(&username)
+		if err != nil {
+			log.Printf("Received error scanning in data from database: %v", err)
+			continue
+		}
+		usernames = append(usernames, username)
+	}
+
+	return usernames, nil
 }
 
 // GetTeamByName retrieves the request team name belonging to the given org name.

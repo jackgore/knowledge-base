@@ -37,6 +37,7 @@ type Driver interface {
 	GetTeam(teamID int) (team.Team, error)
 	GetTeamByName(org, team string) (team.Team, error)
 	GetTeams(org string) ([]team.Team, error)
+	GetTeamMembers(org, team string, admins bool) ([]string, error)
 	InsertTeam(team.Team) error
 	InsertTeamMember(username, org, team string, isAdmin bool) error
 

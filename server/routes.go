@@ -15,6 +15,7 @@ var (
 	l = wrappers.LoggedInMiddleware{}
 	u = wrappers.IsUserMiddleware{}
 	o = wrappers.OrgMemberMiddleware{}
+	t = wrappers.TeamMemberMiddleware{}
 )
 
 type Server struct {
@@ -36,6 +37,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bo
 	l.Initialize(sm)
 	u.Initialize(sm)
 	o.Initialize(sm, db)
+	t.Initialize(sm, db)
 
 	s.Router.HandleFunc("/public", isPublicHandler(allowPublic))
 
@@ -72,7 +74,7 @@ func New(api handlers.API, sm session.Manager, db storage.Driver, allowPublic bo
 	s.Router.HandleFunc("/organizations/{organization}/members", o.OrgAdmin(api.InsertOrganizationMember)).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations", l.LoggedIn(api.CreateOrganization)).Methods(http.MethodPost)
 
-	s.Router.HandleFunc("/organizations/{organization}/teams/{team}", api.GetTeam).Methods(http.MethodGet)
+	s.Router.HandleFunc("/organizations/{organization}/teams/{team}", t.TeamMember(api.GetTeam)).Methods(http.MethodGet)
 	s.Router.HandleFunc("/organizations/{organization}/teams", o.OrgMember(api.CreateTeam)).Methods(http.MethodPost)
 	s.Router.HandleFunc("/organizations/{organization}/teams", api.GetTeams).Methods(http.MethodGet)
 
