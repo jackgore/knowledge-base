@@ -3,4 +3,5 @@ vendor/*
 Gopkg.lock
 runTests.sh
 test_logs.txt
+*.swp
 README.md
