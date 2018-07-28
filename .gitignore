@@ -1,6 +1,5 @@
 # go/dep files
 vendor
-Gopkg.lock
 
 # Go binary
 knowledge-base

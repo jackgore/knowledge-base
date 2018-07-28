@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/JonathonGore/knowledge-base/models/user"
@@ -74,15 +75,13 @@ func (d *driver) GetUserByUsername(username string) (user.User, error) {
 	return user, nil
 }
 
-/* Gets the user with the given userID from the database.
- */
+// GetUser retrieves the user with the request id from the database.
 func (d *driver) GetUser(userID int) (user.User, error) {
 	user := user.User{}
 	err := d.db.QueryRow("SELECT id, first_name, last_name, joined_on, email FROM users WHERE id=$1",
 		userID).Scan(&user.ID, &user.FirstName, &user.LastName, &user.JoinedOn, &user.Email)
 	if err != nil {
-		log.Printf("Unable to retrieve user with id %v: %v", userID, err)
-		return user, err
+		return user, fmt.Errorf("unable to retrieve user with id %v: %v", userID, err)
 	}
 
 	return user, nil
