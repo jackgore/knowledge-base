@@ -27,7 +27,7 @@ sleep 1
 
 # Run our api-check tests
 echo 'Running api-check tests...'
-api-check # github.com/JonathonGore/api-check
+api-check run # github.com/JonathonGore/api-check
 
 # Run our unit tests
 echo 'Running go unit tests...'
