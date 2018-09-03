@@ -7,18 +7,29 @@ import (
 	"github.com/JonathonGore/knowledge-base/models/organization"
 )
 
-/* Gets the org with the given ID from the database.
- */
+// GetOrganization retrieves the org with the given ID from the database.
 func (d *driver) GetOrganization(orgID int) (organization.Organization, error) {
 	org := organization.Organization{}
-	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM team WHERE id=$1",
+	err := d.db.QueryRow("SELECT id, name, created_on, is_public FROM team WHERE id=$1 AND is_deleted=false",
 		orgID).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic)
 	if err != nil {
-		log.Printf("Unable to retrieve org with id %v: %v", orgID, err)
 		return org, err
 	}
 
 	return org, nil
+}
+
+// DeleteOrganization deletes the org with the given name from the database.
+func (d *driver) DeleteOrganization(org string) error {
+	// Note: Implementing deletes of an organization without a soft delete is more tricky
+	// and could be bad if we instantly wipe out sensitive data.
+	// Instead for now we will use an `deleted` column.
+	_, err := d.db.Exec("UPDATE organization SET is_deleted=true WHERE name=$1", org)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetOrganizationByName retrieves the requested organization from the database
@@ -27,7 +38,7 @@ func (d *driver) GetOrganizationByName(name string) (organization.Organization, 
 	org := organization.Organization{}
 	err := d.db.QueryRow("SELECT id, name, created_on, is_public, "+
 		" (SELECT count(*) FROM member_of WHERE id=org_id)"+
-		" FROM organization WHERE upper(name)=$1",
+		" FROM organization WHERE upper(name)=$1 AND is_deleted=false",
 		strings.ToUpper(name)).Scan(&org.ID, &org.Name, &org.CreatedOn, &org.IsPublic, &org.MemberCount)
 	if err != nil {
 		log.Printf("Error retriving org by name: %v", err)
@@ -43,7 +54,7 @@ func (d *driver) GetUserOrganizations(uid int) ([]organization.Organization, err
 		" (SELECT count(*) FROM member_of WHERE id=org_id),"+
 		" (SELECT count(*) FROM team WHERE team.org_id=organization.id)"+
 		" FROM organization JOIN member_of ON (id=member_of.org_id)"+
-		" WHERE member_of.user_id=$1 order by name", uid)
+		" WHERE member_of.user_id=$1 AND is_deleted=false order by name", uid)
 	if err != nil {
 		log.Printf("Unable to receive organizations from the db: %v", err)
 		return nil, err
@@ -69,7 +80,7 @@ func (d *driver) GetOrganizations(public bool) ([]organization.Organization, err
 	rows, err := d.db.Query("SELECT id, name, created_on, is_public,"+
 		" (SELECT count(*) FROM member_of WHERE id=org_id),"+
 		" (SELECT count(*) FROM team WHERE team.org_id=organization.id)"+
-		" FROM organization WHERE is_public=$1"+
+		" FROM organization WHERE is_public=$1 and is_deleted=false"+
 		" order by name", public)
 	if err != nil {
 		log.Printf("Unable to receive organizations from the db: %v", err)
@@ -110,7 +121,7 @@ func (d *driver) GetOrganizationMembers(org string, admins bool) ([]string, erro
 	rows, err := d.db.Query(
 		"SELECT username FROM users, organization, member_of"+
 			" WHERE users.id = member_of.user_id AND organization.id = member_of.org_id"+
-			" AND organization.name = $1"+
+			" AND organization.name = $1 AND is_deleted=false"+
 			adminCheck+
 			" ORDER BY username", org)
 	if err != nil {
@@ -161,8 +172,7 @@ func (d *driver) InsertOrgMember(username, org string, isAdmin bool) error {
 	return tx.Commit()
 }
 
-/* Inserts the given organization into the database
- */
+// InsertOrganization creates an organization entry in the database
 func (d *driver) InsertOrganization(org organization.Organization) (int, error) {
 	err := d.db.QueryRow("INSERT INTO organization(name, created_on, is_public) VALUES($1, $2, $3) returning id;",
 		org.Name, org.CreatedOn, org.IsPublic).Scan(&org.ID)

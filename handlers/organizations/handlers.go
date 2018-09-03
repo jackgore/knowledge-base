@@ -22,6 +22,7 @@ import (
 // storage is the interface required by the organizations handlers to store and
 // and retrieve organization data.
 type storage interface {
+	DeleteOrganization(name string) error
 	GetOrganization(orgID int) (organization.Organization, error)
 	GetOrganizationByName(name string) (organization.Organization, error)
 	GetOrganizations(public bool) ([]organization.Organization, error)
@@ -82,6 +83,26 @@ func joinOrgs(orgs1 []organization.Organization, orgs2 []organization.Organizati
 	}
 
 	return orgs1
+}
+
+/* DELETE /organizations/<organization>
+ *
+ * Deletes the organization with the provided name.
+ */
+func (h *Handler) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
+	org, ok := mux.Vars(r)["organization"]
+	if !ok {
+		httputil.HandleError(w, errors.InternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.db.DeleteOrganization(org); err != nil {
+		log.Printf("unable to delete organization %v", org)
+		httputil.HandleError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	httputil.Success(w)
 }
 
 /* GET /organizations

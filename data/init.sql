@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS organization (
 	name VARCHAR(64) NOT NULL UNIQUE,
 	created_on DATE NOT NULL,
 	is_public BOOLEAN NOT NULL DEFAULT true,
+	is_deleted BOOLEAN NOT NULL DEFAULT false,
 	PRIMARY KEY (id)
 );
 

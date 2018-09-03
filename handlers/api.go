@@ -29,6 +29,7 @@ type API interface {
 	Signup(w http.ResponseWriter, r *http.Request)
 
 	CreateOrganization(w http.ResponseWriter, r *http.Request)
+	DeleteOrganization(w http.ResponseWriter, r *http.Request)
 	GetOrganizations(w http.ResponseWriter, r *http.Request)
 	GetOrganization(w http.ResponseWriter, r *http.Request)
 	GetOrganizationMembers(w http.ResponseWriter, r *http.Request)
